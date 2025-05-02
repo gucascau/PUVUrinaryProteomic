@@ -1,0 +1,407 @@
+---
+title: "FigureGeneration_ForMS_NormalvsControl"
+author: "Xin Wang"
+date: "2025-04-10"
+output: html_document
+  This script is used for figure generations: 
+      - Including the Volcano plots of DEGs
+      - Top proteins using dotplot or feature plots 
+      - Spearman correlated plots
+      - Barplots of different categories.
+---
+# Loading the libraries
+```{r}
+#clear all the lists
+rm(list=ls())
+library(metap)
+library(tidyverse)
+library(ggplot2)
+library(ggnewscale)
+library(ggrepel)
+#BiocManager::install("pRoloc")
+
+library(clusterProfiler)
+library(org.Hs.eg.db)
+#keytypes(org.Mm.eg.db) 
+
+library(enrichplot)
+library(tidyverse)
+library(factoextra)
+library(purrr)
+
+```
+
+# set up the directory environments
+```{r}
+
+# Input directory
+InputDir <- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_NormalGFRVsControls/MethodIntegration/")
+
+# Output directory
+OutDir<- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_NormalGFRVsControls/MethodIntegration/Figures/")
+
+setwd(OutDir)
+
+```
+
+# read the input datasets
+```{r}
+FinalIntegratedMethods <-read.csv(paste0(InputDir,"FinalCombinedPvalue_IntegratedMethods.csv"))
+
+```
+
+# Generate figures
+```{r}
+# the expression profile of the results
+ExpressionColumnName <- grep("ID|Wilcoxon_Case|Wilcoxon_Control",colnames(FinalIntegratedMethods), value = T)
+ExpressionColumnName 
+# the expression values with name
+FinalExpressionMatrix<-FinalIntegratedMethods %>% dplyr::select(all_of(ExpressionColumnName))
+
+FinalExpressionMatrix %>%  head()
+colnames(FinalIntegratedMethods)
+# Generating the volcano plots based on the final log FC and adjusted P values
+FinalIntegratedMethods %>% head()
+
+FinalIntegratedMethods$FinalP_Fisher
+FinalIntegratedMethods
+# check how many DEPs
+Upregulated <- FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.585)
+Downregulated <- FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.585)
+nrow(Downregulated)
+nrow(Upregulated)
+# volcano plots 
+FinalIntegratedMethodsVolcano<-ggplot(FinalIntegratedMethods,aes(x=max_logFC,y=-log10(FinaladjP_Fisher)))+
+  geom_point(size=1,color= ifelse(FinalIntegratedMethods$FinaladjP_Fisher<=0.05 & FinalIntegratedMethods$max_logFC>=0.58,"red",
+                                  ifelse(FinalIntegratedMethods$FinaladjP_Fisher<=0.05 & FinalIntegratedMethods$max_logFC<=-0.58,"blue","gray")))+ 
+  geom_text_repel(aes(label=ifelse(FinalIntegratedMethods$FinaladjP_Fisher<=0.001 & (FinalIntegratedMethods$max_logFC >=2 | FinalIntegratedMethods$max_logFC<=-2) ,as.character(ID),'')),segment.size=0.01,
+                  hjust=0.2, size=3)+
+  
+  theme_bw()+
+  theme(plot.background = element_blank(),
+        text = element_text(size=16),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) + ylim(c(0,30))
+
+ggsave("FinalIntegratedMethods_volcanoPlots_higheGFRhigheGFRPUVvsControl.pdf", plot =FinalIntegratedMethodsVolcano, height = 4, width = 4 )
+FinalIntegratedMethodsVolcano
+```
+
+# generate the supplementary tables for up-regulated proteins and down-regulated proteins from different methods
+```{r}
+UpRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.585) %>% arrange(FinaladjP_Fisher)
+DownRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.585) %>% arrange(FinaladjP_Fisher)
+
+colnames(FinalIntegratedMethods)
+# generate the selected columns
+SelectedColumnForPublication<- c("ID","Limma_logFC",	"Limma_AveExpr",	"Limma_P.Value.x",	"Limma_adj.P.Val", "DEqMS_sca.P.Value.x",	"DEqMS_sca.adj.pval",	"DEqMS_log.sca.pval","proDA_pval.x",	"proDA_adj_pval",	"proDA_diff","proDA_avg_abundance", "ROTS_logFC",	"ROTS_P.Value.x",	"ROTS_adj.pval", "Wilcoxon_logFC",	"Wilcoxon_P.Value.x",	"Wilcoxon_adj.pval", "DEP_Case_vs_Controls_p.val.x",	"DEP_Case_vs_Controls_p.adj",	"DEP_Case_vs_Controls_ratio", "MSstats_log2FC", "MSstats_pvalue.x",	"MSstats_adj.pvalue", "Mascot_GFRwilpvalue", "Mascot_GFRPadjust", "Mascot_GFRLogFC", "max_logFC", "FinalP_empirical",	"FinalP_Fisher",	"FinalP_Tippett",	"FinalP_Stouffer",	"FinaladjP_Fisher",	"FinaladjP_Tippett",	"FinaladjP_Stouffer",	"FinaladjP_empirical")
+
+UpRegulatedProteinsFinal<- UpRegulatedProteins %>%  dplyr::select(all_of(SelectedColumnForPublication))
+
+DownRegulatedProteinsFinal<- DownRegulatedProteins %>%  dplyr::select(all_of(SelectedColumnForPublication))
+
+write.csv(UpRegulatedProteinsFinal, "UpRegulatedProteins_higheGFRPUVvsControl.csv")
+
+
+write.csv(DownRegulatedProteinsFinal, "DownRegulatedProteins_higheGFRPUVvsControl.csv")
+
+
+```
+
+# generate the dotplots for the top up-regualted and down-regulated proteins
+```{r}
+UpRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.585) %>% arrange(FinaladjP_Fisher)
+DownRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.585) %>% arrange(FinaladjP_Fisher)
+
+nrow(UpRegulatedProteins)
+nrow(DownRegulatedProteins)
+# selected the top 10 differentially expressed proteins
+TOP5URP<-FinalIntegratedMethods %>%  filter(FinalP_Fisher <=0.05 & max_logFC >=0.585) %>% arrange(FinalP_Fisher) %>% slice_head(n = 5) %>% pull(ID)
+TOP5URP
+TOP5DRP<-FinalIntegratedMethods %>%  filter(FinalP_Fisher <=0.05 & max_logFC <=-0.585) %>% arrange(FinalP_Fisher) %>% slice_head(n = 5)%>% pull(ID)
+TOP5DRP
+colnames(FinalIntegratedMethods)
+# select the logFC and P values
+PvalueRownames <- c("ID","Limma_P.Value.x", "DEqMS_sca.P.Value.x","proDA_pval.x", "ROTS_P.Value.x", "Wilcoxon_P.Value.x","MSstats_pvalue.x","DEP_Case_vs_Controls_p.val.x","Mascot_GFRwilpvalue")
+
+#PvalueRownames <- c("Limma_P.Value", "DEqMS_sca.P.Value","proDA_pval", "ROTS_P.Value", "Wilcoxon_P.Value","DEP_Case_vs_Controls_p.val","MSstats_pvalue","Mascot_wilpvalue")
+
+LogFCRownames <- c("Limma_logFC","DEqMS_logFC","proDA_diff","ROTS_logFC","Wilcoxon_logFC","DEP_Case_vs_Controls_ratio", "MSstats_log2FC")
+
+colnames(FinalIntegratedMethods)
+# make the matrix for the final dotplot figure
+LimmaFinalResults<-FinalIntegratedMethods %>% dplyr::select("ID","Limma_P.Value.x","Limma_logFC")  %>% mutate(Type ="Limma") %>%   dplyr::rename(Pvalue = Limma_P.Value.x, LogFC = Limma_logFC)
+
+DEqMSFinalResults<-FinalIntegratedMethods %>% dplyr::select("ID","DEqMS_sca.P.Value.x","DEqMS_logFC")  %>% mutate(Type ="DEqMS") %>%   dplyr::rename(Pvalue = DEqMS_sca.P.Value.x, LogFC = DEqMS_logFC)
+
+ProDAFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","proDA_pval.x","proDA_diff")  %>% mutate(Type ="proDA") %>%   dplyr::rename(Pvalue = proDA_pval.x, LogFC = proDA_diff)
+
+ROTSFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","ROTS_P.Value.x","ROTS_logFC")  %>% mutate(Type ="ROTS") %>%   dplyr::rename(Pvalue = ROTS_P.Value.x, LogFC = ROTS_logFC)
+
+WilcoxonFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","Wilcoxon_P.Value.x","Wilcoxon_logFC")  %>% mutate(Type ="Wilcoxon") %>%   dplyr::rename(Pvalue = Wilcoxon_P.Value.x, LogFC = Wilcoxon_logFC)
+
+DEPFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","DEP_Case_vs_Controls_p.val.x","DEP_Case_vs_Controls_ratio")  %>% mutate(Type ="DEP") %>%   dplyr::rename(Pvalue = DEP_Case_vs_Controls_p.val.x, LogFC = DEP_Case_vs_Controls_ratio)
+
+
+MSstatsFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","MSstats_pvalue.x","MSstats_log2FC")  %>% mutate(Type ="MSstats") %>%   dplyr::rename(Pvalue = MSstats_pvalue.x, LogFC = MSstats_log2FC)
+
+MascotFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","Mascot_GFRwilpvalue","Mascot_GFRLogFC")  %>% mutate(Type ="Mascot") %>%   dplyr::rename(Pvalue = Mascot_GFRwilpvalue, LogFC = Mascot_GFRLogFC)
+
+MascotFinalResults
+# we combine all these results
+FinalMethodCombinedDEPs<- rbind(LimmaFinalResults, DEqMSFinalResults, ProDAFinalResults, ROTSFinalResults, DEPFinalResults,MSstatsFinalResults,WilcoxonFinalResults, MascotFinalResults )
+
+
+PathwayName <- "Top 10 DEPs"
+RequestedGenes<- c(TOP5URP,TOP5DRP)
+
+FinalExpDEGs<-FinalMethodCombinedDEPs %>%  filter( ID %in% RequestedGenes)
+
+FinalMethodCombinedDEPs %>% filter(ID ==c("LCN2"))
+# we then generate a heatmap for the 
+
+# assign signaficance labels
+FinalExpDEGs$significance <- ifelse(FinalExpDEGs$Pvalue <= 0.001, "***",
+                   ifelse(FinalExpDEGs$Pvalue <= 0.01, "**",
+                   ifelse(FinalExpDEGs$Pvalue <= 0.05, "*", "")))
+#reorder the group
+levels(as.factor(FinalExpDEGs$Type))
+FinalExpDEGs$Group <- factor(FinalExpDEGs$Type, levels = rev(c("Limma", "Wilcoxon", "DEP","proDA","ROTS","DEqMS","MSstats","Mascot")))  
+levels(FinalExpDEGs$Group)
+levels(as.factor(FinalExpDEGs$ID))
+
+
+FinalExpDEGs$ID <- factor(as.factor(FinalExpDEGs$ID), levels = RequestedGenes)
+levels(FinalExpDEGs$ID)
+
+FinalExpDEGs %>% head()
+# # only ICA
+# FinalExpDEGs$Group <- factor(FinalExpDEGs$Group, levels = c("HFD_Mouse_IC", "T2DM_Mouse_ICA", "T2DM_Human_ICA"))  
+# Create heatmap using ggplot2
+RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)) +
+  geom_tile(color = "white") +  # Heatmap tiles with borders
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8),na.value = "lightgray")+
+                       #limits = c(-2, 2)) +  # Color scale
+  geom_text(aes(label = significance), color = "black", size = 2) +  # Add p-value stars
+  theme_minimal() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, fill = "logFC") +
+  theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
+RequestedGenesHeatmap
+
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct_higheGFRPUVvsControl.pdf"),plot =RequestedGenesHeatmap, height = 3, width =5 )
+RequestedGenesHeatmap
+
+RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
+  geom_point(aes(size = -log10(Pvalue), color = LogFC)) +  # Dot size based on logFC magnitude
+  scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8)) +  
+  #geom_text(aes(label = significance), vjust = -1, size = 6) +  # Add significance stars
+  theme_classic() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, size = "-log10(p value)", color = "LogFC")
+RequestedGenesDotPlot
+ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD_higheGFRPUVvsControl.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
+
+
+RequestedGenesDotPlot
+FinalExpDEGs$Gene
+FinalExpDEGs$Gene <- factor(FinalExpDEGs$Gene, levels = c("Atp6v1g3","Atp6v1c2", "Atp6v1b1", "Atp6v0d2","Atp6v0a4"))  
+
+ggplot(FinalExpDEGs, aes(x = log2FoldChange, y = Gene, fill = Group)) +
+  geom_bar(stat = "identity", position = "dodge",color = "black") +  # "dodge" separates bars for each category
+  labs(x = "Log2Fold Change",
+       y = "Genes") +
+  theme_classic() + 
+  scale_fill_grey(start = 0.3, end = 0.9) +  # Apply gray color scale
+  theme(legend.position = "top") 
+
+```
+
+# generate the heatmap for the patients for requested genes
+```{r}
+RequestedGeneExp <-FinalExpressionMatrix %>% filter(ID %in% RequestedGenes ) 
+rownames(RequestedGeneExp) =RequestedGeneExp$ID
+RequestedGeneExp$ID <-NULL
+RequestedGeneExp$DEP_ID <-NULL
+
+# change the colnames
+colnames(RequestedGeneExp)<-gsub("Wilcoxon_","",colnames(RequestedGeneExp))
+# generate the pheatmap
+pheatmap::pheatmap(RequestedGeneExp,scale = "row", cluster_cols = F,cluster_rows = F)
+
+```
+
+
+# Using the ClusterProfile to Check GO enrichment
+```{r}
+#enrichGO(row.names(FHFD_FLFD_UrotheliumcompDDEG), OrgDb = "org.Mm.eg.db", ont='BP',pAdjustMethod = 'BH',pvalueCutoff = 1, qvalueCutoff = 1,keyType = 'SYMBOL')
+#CgoUp<-enrichGO(row.names(CUDEG), OrgDb = "org.Mm.eg.db", ont='BP',pAdjustMethod = 'BH',pvalueCutoff = 0.05, qvalueCutoff = 0.5,keyType = 'ENSEMBL')
+CgoUp<-enrichGO(UpRegulatedProteins$ID, OrgDb = "org.Hs.eg.db", ont='BP',pAdjustMethod = 'BH',pvalueCutoff = 1, qvalueCutoff = 1,keyType = 'SYMBOL')
+CgoDown<-enrichGO(DownRegulatedProteins$ID, OrgDb = "org.Hs.eg.db", ont='BP',pAdjustMethod = 'BH',pvalueCutoff = 1, qvalueCutoff = 1,keyType = 'SYMBOL')
+head(CgoDown)
+CgoUpSimplify <- clusterProfiler::simplify(CgoUp)
+
+CgoDownSimplify <- clusterProfiler::simplify(CgoDown)
+
+enrichMap(CgoUp)
+write.table(CgoUpSimplify, file="higheGFRPUVvsControl.UpRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
+write.table(CgoDownSimplify, file="higheGFRPUVvsControl.DownRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
+CgoDownSimplify@result %>% head(n=10)
+CgoUpSimplify@result %>% head(n=20)
+write.table(CgoUp, file="higheGFRPUVvsControl.UpRegulatedGenes.GO.txt", sep="\t", quote=F)
+write.table(CgoDown, file="higheGFRPUVvsControl.DownRegulatedGenes.GO.txt", sep="\t", quote=F)
+
+
+```
+
+# generate the select Heatmap-like functional classification, and  Enrichment Map
+```{r}
+barplot(CgoUpSimplify, showCategory = 5)
+library(DOSE)
+# generate the fold change
+geneList <- FinalIntegratedMethods$max_logFC
+geneList
+names(geneList) <- FinalIntegratedMethods$ID
+geneList = sort(geneList, decreasing = TRUE)
+tail(geneList)
+#
+```
+
+# draw the categories of up-regulated proteins and their FC across methods, their interesting pathways
+```{r}
+
+GOcategories <- c("keratinocyte differentiation","epidermis development","chronic inflammatory response")
+p1 <- cnetplot(CgoUpSimplify, foldChange=geneList, showCategory = GOcategories)+ scale_color_gradient2(name='URP', low='darkblue', high='firebrick')
+
+ggsave("Up_regulated_Keratin_Immune.pdf",plot =p1, height = 4, width = 4.5 )
+?cnetplot
+heatplot(CgoUpSimplify, foldChange=geneList, showCategory=GOcategories)
+
+
+
+# filter the genes list
+RequestedGenes<-CgoUpSimplify %>% as_tibble()%>% filter(Description %in% GOcategories) %>% pull(geneID) %>% strsplit("/") %>% unlist() %>% unique() %>% sort()
+RequestedGenes
+PathwayName <- "Candidate Up pathways"
+FinalExpDEGs<-FinalMethodCombinedDEPs %>%  filter( ID %in% RequestedGenes)
+
+FinalMethodCombinedDEPs %>% filter(ID ==c("LCN2"))
+# we then generate a heatmap for the 
+
+# assign signaficance labels
+FinalExpDEGs$significance <- ifelse(FinalExpDEGs$Pvalue <= 0.001, "***",
+                   ifelse(FinalExpDEGs$Pvalue <= 0.01, "**",
+                   ifelse(FinalExpDEGs$Pvalue <= 0.05, "*", "")))
+#reorder the group
+levels(as.factor(FinalExpDEGs$Type))
+FinalExpDEGs$Group <- factor(FinalExpDEGs$Type, levels = rev(c("Limma", "Wilcoxon", "DEP","proDA","ROTS","DEqMS","MSstats","Mascot")))  
+levels(FinalExpDEGs$Group)
+levels(as.factor(FinalExpDEGs$ID))
+
+
+FinalExpDEGs$ID <- factor(as.factor(FinalExpDEGs$ID), levels = RequestedGenes)
+levels(FinalExpDEGs$ID)
+
+FinalExpDEGs %>% head()
+# # only ICA
+# FinalExpDEGs$Group <- factor(FinalExpDEGs$Group, levels = c("HFD_Mouse_IC", "T2DM_Mouse_ICA", "T2DM_Human_ICA"))  
+# Create heatmap using ggplot2
+RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)) +
+  geom_tile(color = "white") +  # Heatmap tiles with borders
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8),na.value = "lightgray")+
+                       #limits = c(-2, 2)) +  # Color scale
+  geom_text(aes(label = significance), color = "black", size = 2) +  # Add p-value stars
+  theme_minimal() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, fill = "logFC") +
+  theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
+RequestedGenesHeatmap
+
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =6 )
+RequestedGenesHeatmap
+
+RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
+  geom_point(aes(size = -log10(Pvalue), color = LogFC)) +  # Dot size based on logFC magnitude
+  scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8)) +  
+  #geom_text(aes(label = significance), vjust = -1, size = 6) +  # Add significance stars
+  theme_classic() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, size = "-log10(p value)", color = "LogFC")
+RequestedGenesDotPlot
+ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
+
+
+
+
+
+```
+
+# draw the categories of down-regulated proteins and their FC across methods, their interesting pathways
+```{r}
+#geneList
+geneList
+GOcategories <- c("wound healing","epithelial tube morphogenesis","renal system development")
+p2 <- cnetplot(CgoDownSimplify, foldChange=geneList, showCategory = GOcategories)+ scale_color_gradient2(name='UDP', low='darkblue', high='firebrick')
+
+ggsave("Down_regulated_RenalDev_Wound.pdf",plot =p2, height = 4, width = 4.5 )
+?cnetplot
+heatplot(CgoDownSimplify, foldChange=geneList, showCategory=GOcategories)
+
+
+
+# filter the genes list
+RequestedGenes<-CgoDownSimplify %>% as_tibble()%>% filter(Description %in% GOcategories) %>% pull(geneID) %>% strsplit("/") %>% unlist() %>% unique() %>% sort()
+RequestedGenes
+PathwayName <- "Candidate Down pathways"
+FinalExpDEGs<-FinalMethodCombinedDEPs %>%  filter( ID %in% RequestedGenes)
+
+FinalMethodCombinedDEPs %>% filter(ID ==c("LCN2"))
+# we then generate a heatmap for the 
+
+# assign signaficance labels
+FinalExpDEGs$significance <- ifelse(FinalExpDEGs$Pvalue <= 0.001, "***",
+                   ifelse(FinalExpDEGs$Pvalue <= 0.01, "**",
+                   ifelse(FinalExpDEGs$Pvalue <= 0.05, "*", "")))
+#reorder the group
+levels(as.factor(FinalExpDEGs$Type))
+FinalExpDEGs$Group <- factor(FinalExpDEGs$Type, levels = rev(c("Limma", "Wilcoxon", "DEP","proDA","ROTS","DEqMS","MSstats","Mascot")))  
+levels(FinalExpDEGs$Group)
+levels(as.factor(FinalExpDEGs$ID))
+
+
+FinalExpDEGs$ID <- factor(as.factor(FinalExpDEGs$ID), levels = RequestedGenes)
+levels(FinalExpDEGs$ID)
+
+FinalExpDEGs %>% head()
+# # only ICA
+# FinalExpDEGs$Group <- factor(FinalExpDEGs$Group, levels = c("HFD_Mouse_IC", "T2DM_Mouse_ICA", "T2DM_Human_ICA"))  
+# Create heatmap using ggplot2
+RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)) +
+  geom_tile(color = "white") +  # Heatmap tiles with borders
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8),na.value = "lightgray")+
+                       #limits = c(-2, 2)) +  # Color scale
+  geom_text(aes(label = significance), color = "black", size = 2) +  # Add p-value stars
+  theme_minimal() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, fill = "logFC") +
+  theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
+RequestedGenesHeatmap
+
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =6 )
+RequestedGenesHeatmap
+
+RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
+  geom_point(aes(size = -log10(Pvalue), color = LogFC)) +  # Dot size based on logFC magnitude
+  scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8)) +  
+  #geom_text(aes(label = significance), vjust = -1, size = 6) +  # Add significance stars
+  theme_classic() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, size = "-log10(p value)", color = "LogFC")
+RequestedGenesDotPlot
+ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
+
+
+
+```
+
