@@ -39,10 +39,10 @@ library(purrr)
 ```{r}
 
 # Input directory
-InputDir <- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses/")
+InputDir <- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_CasesVsControls/")
 
 # Output directory
-OutDir<- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses/MethodIntegration/")
+OutDir<- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_CasesVsControls/MethodIntegration/")
 
 setwd(OutDir)
 

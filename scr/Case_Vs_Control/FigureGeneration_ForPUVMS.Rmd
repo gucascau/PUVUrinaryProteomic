@@ -204,16 +204,16 @@ ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGe
 
 
 RequestedGenesDotPlot
-FinalExpDEGs$Gene
-FinalExpDEGs$Gene <- factor(FinalExpDEGs$Gene, levels = c("Atp6v1g3","Atp6v1c2", "Atp6v1b1", "Atp6v0d2","Atp6v0a4"))  
+#FinalExpDEGs$Gene
+# FinalExpDEGs$Gene <- factor(FinalExpDEGs$Gene, levels = c("Atp6v1g3","Atp6v1c2", "Atp6v1b1", "Atp6v0d2","Atp6v0a4"))  
 
-ggplot(FinalExpDEGs, aes(x = log2FoldChange, y = Gene, fill = Group)) +
-  geom_bar(stat = "identity", position = "dodge",color = "black") +  # "dodge" separates bars for each category
-  labs(x = "Log2Fold Change",
-       y = "Genes") +
-  theme_classic() + 
-  scale_fill_grey(start = 0.3, end = 0.9) +  # Apply gray color scale
-  theme(legend.position = "top") 
+# ggplot(FinalExpDEGs, aes(x = log2FoldChange, y = Gene, fill = Group)) +
+#   geom_bar(stat = "identity", position = "dodge",color = "black") +  # "dodge" separates bars for each category
+#   labs(x = "Log2Fold Change",
+#        y = "Genes") +
+#   theme_classic() + 
+#   scale_fill_grey(start = 0.3, end = 0.9) +  # Apply gray color scale
+#   theme(legend.position = "top") 
 
 ```
 
