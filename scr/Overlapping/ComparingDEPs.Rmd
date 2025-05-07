@@ -1,0 +1,383 @@
+---
+title: "Comparing DEPs among different categories"
+author: "Xin Wang"
+date: "2025-05-06"
+output: html_document
+description: The script is to comparing the differentially expressed proteins
+  1. Get the DEPs from comparing among case and controls, high eGFR vs controls, low eGFR vs controls.
+  2. Get the functional enrichment of these comparisions
+  3. Get the overlapping and specfic lists of DEPs
+  4. Generage the fold changes and signifcance across the comparisions.
+  5. Correlated analyses between eGFR, aging, gender and proteomic datasets
+---
+# load the libriaries 
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(ggnewscale)
+library(ggrepel)
+
+library(edgeR)
+library(clusterProfiler)
+library(org.Mm.eg.db)
+#keytypes(org.Mm.eg.db) 
+
+library(enrichplot)
+library(tidyverse)
+library(factoextra)
+#BiocManager::install("org.Hs.eg.db",force = TRUE)
+
+library(org.Hs.eg.db)
+
+# venn diagram
+#install.packages("ggvenn")
+library("ggvenn")
+### analyses the proteomic across patients
+```
+
+# read and create the folders for the comparisions
+```{r}
+# set up the working directory
+Outdir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/OverlappingComparisons/")
+
+# the DEPs were stored in the different folders 
+Indir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/")
+setwd(Outdir)
+
+# the folder to store the clinical characteristics and the raw files
+ClinicInputDir<- c("/Users/XXW004/Documents/Projects/DarylMcleod/Data Analysis/")
+
+# create folders for the Functional enrichment
+```
+
+
+# read the input datasets
+```{r}
+# read the clinical datasets
+CaseClinicalCharacters<- read.csv(paste0(ClinicInputDir, "ClinalFactor_FromLindsey2.csv" ))
+
+ControlClinicalCharacters<- read.csv(paste0(ClinicInputDir, "ControlClinic2.csv" ))
+CaseClinicalCharacters
+
+# read the comparison between case and controls
+DEPsCasevsControls<- read.csv(paste0(Indir, "Intensity_Analyses_CasesVsControls/MethodIntegration/FinalCombinedPvalue_IntegratedMethods.csv"))
+
+# read the comparison between normal eGFR and controls
+DEPsNormalGFRvsControls<- read.csv(paste0(Indir, "Intensity_Analyses_NormalGFRVsControls/MethodIntegration/FinalCombinedPvalue_IntegratedMethods.csv"))
+
+# read the comparison between low eGFR and controls
+DEPsLowGFRvsControls<- read.csv(paste0(Indir, "Intensity_Analyses_LowGFRVsControls/MethodIntegration/FinalCombinedPvalue_IntegratedMethods.csv"))
+
+# read the comparison between low eGFR and high eGFR
+DEPsLowGFRvsHighGFR<- read.csv(paste0(Indir, "Intensity_Analyses_LowGFRVsNormalGFR/MethodIntegration/FinalCombinedPvalue_IntegratedMethods.csv"))
+```
+
+# Generate the DEPs, up-regulated and down-regulated proteins.
+```{r}
+# Generate DEPs from high GFR cases, low GFR cases, all cases comparing to controls 
+
+# DEPs from case vs control
+DEPsCasevsControlsDEProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
+DEPsCasevsControlsUpProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+
+DEPsCasevsControlsDownProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+
+# DEPs from normal eGFR vs control
+DEPsNormalGFRvsControlsDEProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
+
+DEPsNormalGFRvsControlsUpProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+
+DEPsNormalGFRvsControlsDownProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+
+
+# DEPs from low eGFR vs control
+DEPsLowGFRvsControlsDEProteins <- DEPsLowGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
+
+DEPsLowGFRvsControlsUpProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+
+DEPsLowGFRvsControlsDownProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+
+# DEPs from low eGFR vs high eGFR
+DEPsLowGFRvsHighGFRDEProteins <- DEPsLowGFRvsHighGFR%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
+
+DEPsLowGFRvsHighGFRUpProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+
+DEPsLowGFRvsHighGFRDownProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+
+
+# the expression datasets of the different proteins
+
+ExpressionColumns<-grep("Wilcoxon_Case|Wilcoxon_Control",colnames(DEPsCasevsControls), value = TRUE)
+ExpressedProteins<- DEPsCasevsControls[,ExpressionColumns]
+rownames(ExpressedProteins) <- DEPsCasevsControls$ID
+
+colnames(ExpressedProteins)<-gsub("Wilcoxon_","",colnames(ExpressedProteins))
+
+```
+
+# Generate the overlapping of the comparisions
+```{r}
+# generate the list of two condition
+
+DEGComparision <- list('low GFR' =DEPsLowGFRvsControlsDEProteins$ID, 'High GFR' = DEPsNormalGFRvsControlsDEProteins$ID,'Overall'=DEPsCasevsControlsDEProteins$ID)
+DEGComparision
+
+UpComparision <- list('low GFR' =DEPsLowGFRvsControlsUpProteins$ID,'High GFR' = DEPsNormalGFRvsControlsUpProteins$ID, 'Overall'=DEPsCasevsControlsDEProteins$ID)
+
+DownComparision <- list('low GFR' =DEPsLowGFRvsControlsDownProteins$ID,'High GFR' = DEPsNormalGFRvsControlsDownProteins$ID, 'Overall'=DEPsNormalGFRvsControlsDownProteins$ID)
+
+
+library("ggvenn")
+AllComparisionVenn<- ggvenn(DEGComparision,fill_color = c("blue", "red", "gray"), set_name_size =4)
+ggsave("AllComparisionVenn.pdf", plot =AllComparisionVenn, height = 5, width = 5 )
+
+UpComparisionVenn<-ggvenn(UpComparision,fill_color = c("blue", "red", "gray"), set_name_size =4)
+
+ggsave("UpComparisionVenn.pdf", plot =UpComparisionVenn, height = 5, width = 5 )
+DownComparisionVenn<-ggvenn(DownComparision,fill_color = c("blue", "red", "gray"),set_name_size=4)
+ggsave("DownComparisionVenn.pdf", plot =DownComparisionVenn, height = 5, width = 5 )
+
+
+library(gplots)
+par(mar = c(4, 4, 2, 1))
+DEGComparisiontable <- venn(DEGComparision)
+
+
+## for down regulated proteins
+DownComparisiontable <- venn(DownComparision)
+DownComparisiontable
+str(DownComparisiontable)
+FinalDownGenelistOrder <- list(attr(DownComparisiontable,"intersections")$`low GFR:High GFR:Overall`,
+                               attr(DownComparisiontable,"intersections")$`low GFR:Overall`,
+                               attr(DownComparisiontable,"intersections")$`low GFR`,
+                               attr(DownComparisiontable,"intersections")$`High GFR:Overall`,
+                               attr(DownComparisiontable,"intersections")$`High GFR`)
+# for up-regualted proteins
+
+UpComparisiontable <- venn(UpComparision)
+UpComparisiontable
+str(UpComparisiontable)
+FinalUpGenelistOrder <- list(attr(UpComparisiontable,"intersections")$`low GFR:High GFR:Overall`,
+                             attr(UpComparisiontable,"intersections")$`low GFR:Overall`,
+                             attr(UpComparisiontable,"intersections")$`low GFR`,
+                             attr(UpComparisiontable,"intersections")$`High GFR:Overall`,
+                             attr(UpComparisiontable,"intersections")$`High GFR`)
+
+
+FinalDEGconservedGenelist <- list(attr(DownComparisiontable,"intersections")$`low GFR:High GFR:Overall`, attr(UpComparisiontable,"intersections")$`low GFR:High GFR:Overall`)
+
+
+FinalDEGconservedGenelistForheatmap <-ExpressedProteins[match(FinalDEGconservedGenelist %>% unlist(), rownames(ExpressedProteins)),]
+FinalDEGconservedGenelistForheatmap %>% pheatmap::pheatmap(scale = "row",cluster_rows=FALSE, cluster_cols = FALSE)
+
+write.csv(FinalDEGconservedGenelistForheatmap, file = "FinalDEGconservedGenelistForheatmap.csv")
+
+FinalDEGLowconservedGenelist <- list(attr(DownComparisiontable,"intersections")$`low GFR:Overall`, attr(UpComparisiontable,"intersections")$`low GFR:Overall`)
+
+FinalDEGLowconservedGenelistForheatmap<- ExpressedProteins[match(FinalDEGLowconservedGenelist %>% unlist(), rownames(ExpressedProteins)),]
+write.csv(FinalDEGLowconservedGenelistForheatmap, file = "FinalDEGLowconservedGenelistForheatmap.csv")
+
+FinalDEGHighconservedGenelist <- list(attr(DownComparisiontable,"intersections")$`High GFR:Overall`, attr(UpComparisiontable,"intersections")$`High GFR:Overall`)
+
+FinalDEGHighonservedGenelistForheatmap<- ExpressedProteins[match(FinalDEGHighconservedGenelist %>% unlist(), rownames(ExpressedProteins)),]
+write.csv(FinalDEGHighonservedGenelistForheatmap, file = "FinalDEGHighconservedGenelistForheatmap.csv")
+
+FinalEarlySpecificDEGconservedGenelist <- list(attr(DownComparisiontable,"intersections")$`High GFR`, attr(UpComparisiontable,"intersections")$`High GFR`)
+
+
+FinalEarlySpecificDEGconservedGenelistForheatmap<- ExpressedProteins[match(FinalEarlySpecificDEGconservedGenelist %>% unlist(), rownames(ExpressedProteins)),]
+write.csv(FinalEarlySpecificDEGconservedGenelistForheatmap, file = "FinalEarlySpecificDEGconservedGenelistForheatmap.csv")
+
+FinalAvancedSpecificDEGconservedGenelist <- list(attr(DownComparisiontable,"intersections")$`low GFR`, attr(UpComparisiontable,"intersections")$`low GFR`)
+
+FinalAvancedSpecificDEGconservedGenelistForheatmap<- ExpressedProteins[match(FinalAvancedSpecificDEGconservedGenelist %>% unlist(), rownames(ExpressedProteins)),]
+write.csv(FinalAvancedSpecificDEGconservedGenelistForheatmap, file = "FinalAvancedSpecificDEGconservedGenelistForheatmap.csv")
+
+nrow(FinalAvancedSpecificDEGconservedGenelistForheatmap)
+nrow(FinalEarlySpecificDEGconservedGenelistForheatmap)
+nrow(FinalDEGconservedGenelistForheatmap)
+FinalDownGenelistOrder  
+# generate heatmap for the requested files
+FinalDownGenelistOrderForheatmap<-ExpressedProteins[match(FinalDownGenelistOrder %>% unlist(), rownames(ExpressedProteins)),]
+
+write.csv(FinalDownGenelistOrderForheatmap, file = "FinalDownGenelistOrderForheatmap.csv")
+ExpressedProteins[match(FinalUpGenelistOrder %>% unlist(), rownames(ExpressedProteins)),] %>% as.data.frame() %>% 
+  pheatmap::pheatmap(scale = "row",cluster_rows=FALSE, cluster_cols = FALSE)
+?pheatmap
+#top_VariouInfectionCategories_Clustermarkers[order(match(top_VariouInfectionCategories_Clustermarkers$cluster, InfectionCategoriesOrder)),c(2,9,10,6,8,13,3,14,11,4,1,5,7,12,15,16,17,18,19,20,21:40)]
+# check the overlapping of three:
+Reduce(intersect,UpComparision)
+
+Reduce(intersect,DownComparision)
+
+```
+
+# gene ontlogy comparision
+```{r}
+DEGCondtionPlotCC<- compareCluster(geneClusters = DEGComparision, fun = "enrichGO", OrgDb = "org.Hs.eg.db",ont="CC",keyType = 'SYMBOL',pvalueCutoff=1)
+
+?compareCluster
+DEGCondtionDotPlotCC<- dotplot(DEGCondtionPlotCC,showCategory = 15, font.size = 12,label_format = 80)
+ggsave("DEGCondtionDotPlotCC.pdf", plot =DEGCondtionDotPlotCC, height = 10, width = 10 )
+write.csv(DEGCondtionPlotCC, file = "DEGCondtionComparingGOPlotCC.csv")
+
+UPCondtionPlot<- compareCluster(geneClusters = UpComparision, fun = "enrichGO", OrgDb = "org.Hs.eg.db",ont="BP",keyType = 'SYMBOL', pvalueCutoff=1)
+
+write.csv(UPCondtionPlot, file = "UPCondtionPlotComparingGOBP.csv")
+UpDotPlotCondition<- dotplot(UPCondtionPlot,showCategory = 15, font.size = 12,label_format = 80)
+ggsave("GODotPlotCondition_UpGO.pdf", plot =UpDotPlotCondition, height = 10, width = 10 )
+
+DownCondtionPlot<- compareCluster(geneClusters = DownComparision, fun = "enrichGO", OrgDb = "org.Hs.eg.db",ont="BP",keyType = 'SYMBOL',pvalueCutoff=1)
+write.csv(DownCondtionPlot, file = "DownCondtionPlotComparingGOBP.csv")
+DownDotPlotCondition<- dotplot(DownCondtionPlot,showCategory = 15, font.size = 12,label_format = 80)
+ggsave("GODotPlotCondition_DownGO.pdf", plot =DownDotPlotCondition, height = 8, width = 10 )
+
+# select the interesting pathways to show 
+
+# show the candidate pathways 
+selectedPathway<- c("vacuolar transport","regulation of endocytosis","N-glycan processing","wound healing", "hemostasis","coagulation","Wnt signaling pathway","cell-cell signaling by wnt","collagen-activated signaling pathway",
+                    "response to transforming growth factor beta","cellular response to transforming growth factor beta stimulus", "ESCRT III complex disassembly", "glycoprotein metabolic process",
+                    "cytokinetic process","homotypic cell-cell adhesion","receptor-mediated endocytosis",       
+                    "positive regulation of exosomal secretion","regulation of canonical Wnt signaling pathway","positive regulation of epithelial cell proliferation",
+                    "tube formation", "cholesterol transport", "epithelial tube morphogenesis","epithelial cell development", "epithelial cell migration", "epithelium migration", 
+                    "cell-cell adhesion mediated by cadherin", "cell growth","regulation of cell growth","angiogenesis involved in wound healing","regulation of angiogenesis")
+
+UPCondtionPlot %>% as.data.frame() %>% head()
+
+SelectedPathwayForfigure<-DownCondtionPlot %>% as.data.frame() %>% dplyr::filter(Description %in% selectedPathway) %>% arrange(p.adjust)
+
+SelectedPathwayForfigure
+# setting up the minium p adjust value for size visulization 
+maximum<- max(c(-log10(SelectedPathwayForfigure$p.adjust)))
+maximum
+## set the levels of Description and reorder them
+SelectedPathwayForfigure$Description<- ordered(SelectedPathwayForfigure$Description, levels=selectedPathway)
+#reorder(variable, value)
+p<-ggplot(SelectedPathwayForfigure, aes(x=SelectedPathwayForfigure$Cluster, y=SelectedPathwayForfigure$Description))
+
+InterestingComparionsDotplot<- p+ geom_point(aes(size=-log10(p.adjust)),
+                                             colour= ifelse(SelectedPathwayForfigure$p.adjust <=0.05,"BlueViolet",
+                                                            ifelse(SelectedPathwayForfigure$p.adjust==1,"white","gray")), 
+                                             fill= ifelse(SelectedPathwayForfigure$p.adjust<=0.05,"BlueViolet",
+                                                          ifelse(SelectedPathwayForfigure$p.adjust==1,"white","gray"))) +
+  labs(title = "GO Enrichment", x = "Three comparisions", y = "GO enrichments of down-regulated proteins") +
+  theme_bw()+
+  theme(plot.background = element_blank(),
+        text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x = element_text(angle = 30, hjust = 1)
+  ) + scale_size_area(limits=c(0,maximum),breaks=c(0,2,4,6))
+
+ggsave("InterestingComparionsDownRegulatedDotplot.pdf", plot =InterestingComparionsDotplot, height = 7, width = 8 )
+
+
+
+# show the candidate pathways for up-regulated proteins
+
+selectedUPregulatedPathway<- c("negative regulation of proteolysis","protein-lipid complex remodeling","humoral immune response","regulation of inflammatory response",
+                               "response to interferon-gamma","intestinal cholesterol absorption","lipid digestion","negative regulation of angiogenesis",
+                               "negative regulation of blood vessel morphogenesis","negative regulation of vasculature development","regulation of lipid transport","cholesterol transport","regulation of angiogenesis","morphogenesis of a branching epithelium",
+                               "regulation of CoA-transferase activity","keratinization","keratinocyte differentiation","intermediate filament cytoskeleton organization","intermediate filament-based process","epidermal cell differentiation",
+                               "intermediate filament organization","epidermis development","regulation of epidermis development")
+
+selectedUPregulatedPathwayForfigure<-UPCondtionPlot %>% as.data.frame() %>% dplyr::filter(Description %in% selectedUPregulatedPathway) %>% arrange(p.adjust)
+
+selectedUPregulatedPathwayForfigure
+# setting up the minium p adjust value for size visulization 
+maximum<- max(c(-log10(selectedUPregulatedPathwayForfigure$p.adjust)))
+
+## set the levels of Description and reorder them
+selectedUPregulatedPathwayForfigure$Description<- ordered(selectedUPregulatedPathwayForfigure$Description, levels=selectedUPregulatedPathway)
+#reorder(variable, value)
+p1<-ggplot(selectedUPregulatedPathwayForfigure, aes(x=selectedUPregulatedPathwayForfigure$Cluster, y=selectedUPregulatedPathwayForfigure$Description))
+
+selectedUPregulatedPathwayForfigurePlot<- p1+ geom_point(aes(size=-log10(p.adjust)),
+                                                         colour= ifelse(selectedUPregulatedPathwayForfigure$p.adjust <=0.05,"red",
+                                                                        ifelse(selectedUPregulatedPathwayForfigure$p.adjust==1,"white","gray")), 
+                                                         fill= ifelse(selectedUPregulatedPathwayForfigure$p.adjust<=0.05,"red",
+                                                                      ifelse(selectedUPregulatedPathwayForfigure$p.adjust==1,"white","gray"))) +
+  labs(title = "GO Enrichment", x = "Three comparisions", y = "GO enrichments of up-regulated proteins") +
+  theme_bw()+
+  theme(plot.background = element_blank(),
+        text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x = element_text(angle = 30, hjust = 1)
+  ) + scale_size_area(limits=c(0,maximum),breaks=c(0,2,4,6))
+
+ggsave("selectedUPregulatedPathwayForDotPlot.pdf", plot =selectedUPregulatedPathwayForfigurePlot, height = 6.5, width = 7 )
+
+```
+
+# Generate the fold changes heatmap for each comparision
+```{r}
+CasevsControlsFoldChangePvalues<- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>%  mutate(Type = "Cases") %>% dplyr::rename(adjPvalue = FinaladjP_Fisher, LogFC = max_logFC)
+
+LowvsControlsFoldChangePvalues<- DEPsLowGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>%  mutate(Type = "Low") %>% dplyr::rename(adjPvalue = FinaladjP_Fisher, LogFC = max_logFC)
+NormalvsControlsFoldChangePvalues<- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>%  mutate(Type = "Normal")%>% dplyr::rename(adjPvalue = FinaladjP_Fisher, LogFC = max_logFC)
+
+FinalFoldChangePvalues<- rbind(CasevsControlsFoldChangePvalues, NormalvsControlsFoldChangePvalues, LowvsControlsFoldChangePvalues )
+
+
+PathwayName <- "Conserved Proteins"
+
+RequestedGenes<-  FinalDEGconservedGenelist %>% unlist() %>% unique()
+PathwayName <- "Normal eGFR specific"
+RequestedGenes <- FinalEarlySpecificDEGconservedGenelist%>% unlist() %>% unique()
+FinalExpDEGs<-FinalFoldChangePvalues %>%  filter( ID %in% RequestedGenes)
+
+FinalExpDEGs 
+# we then generate a heatmap for the 
+
+# assign signaficance labels
+FinalExpDEGs$significance <- ifelse(FinalExpDEGs$adjPvalue <= 0.001, "***",
+                   ifelse(FinalExpDEGs$adjPvalue <= 0.01, "**",
+                   ifelse(FinalExpDEGs$adjPvalue <= 0.05, "*", "")))
+#reorder the group
+levels(as.factor(FinalExpDEGs$Type))
+FinalExpDEGs$Group <- factor(FinalExpDEGs$Type, levels = rev(c("Low", "Normal", "Cases")))  
+levels(FinalExpDEGs$Group)
+levels(as.factor(FinalExpDEGs$ID))
+
+
+FinalExpDEGs$ID <- factor(as.factor(FinalExpDEGs$ID), levels = RequestedGenes)
+levels(FinalExpDEGs$ID)
+
+FinalExpDEGs %>% head()
+# # only ICA
+# FinalExpDEGs$Group <- factor(FinalExpDEGs$Group, levels = c("HFD_Mouse_IC", "T2DM_Mouse_ICA", "T2DM_Human_ICA"))  
+# Create heatmap using ggplot2
+RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)) +
+  geom_tile(color = "white") +  # Heatmap tiles with borders
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8),na.value = "lightgray")+
+                       #limits = c(-2, 2)) +  # Color scale
+  geom_text(aes(label = significance), color = "black", size = 2) +  # Add p-value stars
+  theme_minimal() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, fill = "logFC") +
+  theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
+RequestedGenesHeatmap
+
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =5 )
+RequestedGenesHeatmap
+
+RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
+  geom_point(aes(size = -log10(adjPvalue), color = LogFC)) +  # Dot size based on logFC magnitude
+  scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0,limits = c(-8, 8)) +  
+  #geom_text(aes(label = significance), vjust = -1, size = 6) +  # Add significance stars
+  theme_classic() +  # Clean theme
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
+  labs(title = PathwayName, size = "-log10(p value)", color = "LogFC")
+RequestedGenesDotPlot
+ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
+
+```
+
+# generate the heatmap 
+```{r}
+
+```
+

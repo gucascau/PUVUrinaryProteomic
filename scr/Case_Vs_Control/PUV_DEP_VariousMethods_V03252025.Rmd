@@ -149,108 +149,39 @@ RequestedNameJD<- SampleIDTransfer %>% filter(ID.By.MS %in% RequestedName) %>% p
 RequestedNameJD
 ```
 
-# please note we used the peptide.tsv for the input to measure the minum peptide 
+# we are using the combine_peptide.tsv to measure the minimum peptide count
 ```{r}
-library(data.table)
 
-# We read the psm.tsv from each sample and calculate the minimum PSM counts
-# Attention, the PSM value were stored from each sample folder, we read the folder and count each protein per sample
-psm_counts <- list()
-PSMIndir <- c("/Users/XXW004/Library/CloudStorage/OneDrive-NationwideChildren'sHospital/Proteomics/RawProteomicDatasets/FullResults/")
-Samplelabel<- c(paste0("Case_", 1:20), paste0("Control_",21:40))
-Samplelabel
-# create a function to read the process one file
-process_pep<- function(sample_name){
-  #CasePsm <- fread(paste0 (PSMIndir, sample_name, "/", "psm.tsv"))
-  #sample_name<- "Case_1"
-  peptides <- read.delim(paste0 (PSMIndir, sample_name, "/", "peptide.tsv"), stringsAsFactors = FALSE)
-  
-  # count unique peptide per protein
-  peptide_counts <- peptides %>% 
-    dplyr::select(Protein, Peptide) %>%
-  distinct() %>%
-  group_by(Protein) %>%
-  summarise(!!sample_name := n()) %>%
-  arrange(desc(sample_name))
-  peptide_counts
+df <- read.csv(paste0(RawInputDir, "combined_final_peptide_ByJF.csv"), header = TRUE, stringsAsFactors = FALSE)
+df %>% head()
+# Identify columns
+protein_col <- "Protein"   
+sample_cols <- colnames(df)[grep("Spectral.Count", colnames(df))]  # adjust pattern if needed
+length(sample_cols)
+df[sample_cols]
+# Ensure samples are numeric
+df[sample_cols] <- lapply(df[sample_cols], as.numeric)
 
-  # # Optional: remove contaminants or reverse hits
-  # CasePsm <- CasePsm[!grepl("Contaminant|Reverse", Protein),]
-  # # Step 1: Expand multi-protein assignments (split semicolon-separated IDs)
-  # psm_expanded <- separate_rows(CasePsm, Protein, sep = ";")
-  # # Step 2: Count PSMs per protein per sample
-  # name <- paste0(sample_name, "_psm")
-  # psm_expanded %>%
-  #   group_by(Protein) %>%
-  #   summarise(!!name := n(), .groups = "drop")
-}
+# Create a presence matrix: 1 if peptide present in sample (non-zero), else 0
+presence_matrix <- df
+presence_matrix[sample_cols] <- lapply(df[sample_cols], function(x) as.integer(x > 0))
 
-# Process all samples and combine and generate multiple lists that contain each protein and their psm value
-psm_counts <- map(Samplelabel, process_pep)
-psm_counts
-# We used Reduce to merge all the lists based on the protein ID. 
-psm_expanded <-Reduce(function(x, y) merge(x, y, by = "Protein", all = TRUE), psm_counts)
-psm_expanded
-# Replace NA with 0
-psm_expanded[is.na(psm_expanded)] <- 0
+# Summarize: count peptides per protein per sample
+library(dplyr)
+peptide_counts <- presence_matrix %>%
+  group_by(across(all_of(protein_col))) %>%
+  summarise(across(all_of(sample_cols), sum), .groups = "drop")
+peptide_counts
 
-colnames(psm_expanded)
-# Calculate the minumum PSM per protein across all samples
-psm_cols <- grep("Case|Control", colnames(psm_expanded), value = TRUE)
-psm_cols
-psm_expanded[,psm_cols]
+# Calculate the minimum peptide count per protein across all samples
+peptide_counts$MinPeptides <- apply(peptide_counts[sample_cols], 1, min)
+peptide_counts$SumPeptides <- apply(peptide_counts[sample_cols], 1, sum)
+peptide_counts$MidPeptides <- apply(peptide_counts[sample_cols], 1, median)
+peptide_counts %>% filter(MidPeptides >1) %>% nrow()
 
-# extract the min value for all the samples
-psm_expanded$min_psm<-apply(psm_expanded[,psm_cols],1, function(x) min(as.numeric(x), na.rm = TRUE))
-psm_expanded
-# extract the total value
-psm_expanded$sum_psm<-apply(psm_expanded[,psm_cols],1, function(x) sum(as.numeric(x), na.rm = TRUE))
-# save into a psm file
-write.csv(psm_expanded,"combine_protein_peptidenumber_updated.csv")
-
-# please note that if you did not change the name, you don't need to perfom the following analyes
-# we need to change the name into the now name
-grep("Control_|Case_",colnames(psm_expanded),value=T)
-
-# 
-colnames(psm_expanded)
-Old_name<- SampleIDTransfer$ID.By.JD
-New_name<- SampleIDTransfer$ID.By.MS
-Old_name
-New_name
-# create the name mapping
-name_map<- setNames(Old_name, New_name)
-
-# then apply the rename
-psm_expanded<- psm_expanded %>% rename(!!!name_map)
-write.csv(psm_expanded,"combine_protein_peptidenumber_rename_updated.csv")
-
-# add the specific columns min values
-psm_expanded %>% filter(min_psm >=1) %>% nrow()
-# for selected column
-
-SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:10), paste0("Case",11:20))
-#SamplelabelSelectedlowvsnormalGFR <- c(paste0("Case", 1:20,"_psm"))
-colnames(psm_expanded)
-SamplelabelSelectednlowvsnormalGFR
-psm_expanded$min_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
-write.csv(psm_expanded,"combine_protein_peptidenumber_rename_updated.csv")
-psm_expanded %>% head()
-# please attention that we need to change the Protein ID to Gene
-# we change the ID in the DEqMS section
-# sp|A0A024RBG1|NUD4B_HUMAN
 ```
 
-
-#
-# please note we are not using the following PSM
-
-<!-- Each row in combined_peptide.tsv represents a peptide (not PSM), and contains: -->
-<!-- A unique peptide sequence -->
-<!-- One or more associated proteins (in a column like Protein or Protein(s)) -->
-<!-- Intensity or spectral data across samples (optional) -->
-<!-- We tried to measure the min peptide counts for the groups -->
-
+<!-- # please note we used the peptide.tsv for the input to measure the minum peptide  -->
 <!-- ```{r} -->
 <!-- library(data.table) -->
 
@@ -261,38 +192,53 @@ psm_expanded %>% head()
 <!-- Samplelabel<- c(paste0("Case_", 1:20), paste0("Control_",21:40)) -->
 <!-- Samplelabel -->
 <!-- # create a function to read the process one file -->
-<!-- process_psm<- function(sample_name){ -->
-<!--   CasePsm <- fread(paste0 (PSMIndir, sample_name, "/", "psm.tsv")) -->
-<!--   # Optional: remove contaminants or reverse hits -->
-<!--   CasePsm <- CasePsm[!grepl("Contaminant|Reverse", Protein),] -->
-<!--   # Step 1: Expand multi-protein assignments (split semicolon-separated IDs) -->
-<!--   psm_expanded <- separate_rows(CasePsm, Protein, sep = ";") -->
-<!--   # Step 2: Count PSMs per protein per sample -->
-<!--   name <- paste0(sample_name, "_psm") -->
-<!--   psm_expanded %>% -->
-<!--     group_by(Protein) %>% -->
-<!--     summarise(!!name := n(), .groups = "drop") -->
+<!-- process_pep<- function(sample_name){ -->
+<!--   #CasePsm <- fread(paste0 (PSMIndir, sample_name, "/", "psm.tsv")) -->
+<!--   #sample_name<- "Case_1" -->
+<!--   peptides <- read.delim(paste0 (PSMIndir, sample_name, "/", "peptide.tsv"), stringsAsFactors = FALSE) -->
+
+<!--   # count unique peptide per protein -->
+<!--   peptide_counts <- peptides %>%  -->
+<!--     dplyr::select(Protein, Peptide) %>% -->
+<!--   distinct() %>% -->
+<!--   group_by(Protein) %>% -->
+<!--   summarise(!!sample_name := n()) %>% -->
+<!--   arrange(desc(sample_name)) -->
+<!--   peptide_counts -->
+
+<!--   # # Optional: remove contaminants or reverse hits -->
+<!--   # CasePsm <- CasePsm[!grepl("Contaminant|Reverse", Protein),] -->
+<!--   # # Step 1: Expand multi-protein assignments (split semicolon-separated IDs) -->
+<!--   # psm_expanded <- separate_rows(CasePsm, Protein, sep = ";") -->
+<!--   # # Step 2: Count PSMs per protein per sample -->
+<!--   # name <- paste0(sample_name, "_psm") -->
+<!--   # psm_expanded %>% -->
+<!--   #   group_by(Protein) %>% -->
+<!--   #   summarise(!!name := n(), .groups = "drop") -->
 <!-- } -->
 
 <!-- # Process all samples and combine and generate multiple lists that contain each protein and their psm value -->
-<!-- psm_counts <- map(Samplelabel, process_psm) -->
+<!-- psm_counts <- map(Samplelabel, process_pep) -->
+<!-- psm_counts -->
 <!-- # We used Reduce to merge all the lists based on the protein ID.  -->
 <!-- psm_expanded <-Reduce(function(x, y) merge(x, y, by = "Protein", all = TRUE), psm_counts) -->
-
+<!-- psm_expanded -->
 <!-- # Replace NA with 0 -->
 <!-- psm_expanded[is.na(psm_expanded)] <- 0 -->
 
+<!-- colnames(psm_expanded) -->
 <!-- # Calculate the minumum PSM per protein across all samples -->
-<!-- psm_cols <- grep("_psm", colnames(psm_expanded), value = TRUE) -->
+<!-- psm_cols <- grep("Case|Control", colnames(psm_expanded), value = TRUE) -->
+<!-- psm_cols -->
 <!-- psm_expanded[,psm_cols] -->
 
 <!-- # extract the min value for all the samples -->
 <!-- psm_expanded$min_psm<-apply(psm_expanded[,psm_cols],1, function(x) min(as.numeric(x), na.rm = TRUE)) -->
-
+<!-- psm_expanded -->
 <!-- # extract the total value -->
 <!-- psm_expanded$sum_psm<-apply(psm_expanded[,psm_cols],1, function(x) sum(as.numeric(x), na.rm = TRUE)) -->
 <!-- # save into a psm file -->
-<!-- write.csv(psm_expanded,"combine_protein_peptidenumber.csv") -->
+<!-- write.csv(psm_expanded,"combine_protein_peptidenumber_updated.csv") -->
 
 <!-- # please note that if you did not change the name, you don't need to perfom the following analyes -->
 <!-- # we need to change the name into the now name -->
@@ -300,30 +246,116 @@ psm_expanded %>% head()
 
 <!-- #  -->
 <!-- colnames(psm_expanded) -->
-<!-- Old_name<- paste0(SampleIDTransfer$ID.By.JD, "_psm") -->
-<!-- New_name<- paste0(SampleIDTransfer$ID.By.MS, "_psm") -->
+<!-- Old_name<- SampleIDTransfer$ID.By.JD -->
+<!-- New_name<- SampleIDTransfer$ID.By.MS -->
+<!-- Old_name -->
+<!-- New_name -->
 <!-- # create the name mapping -->
 <!-- name_map<- setNames(Old_name, New_name) -->
 
 <!-- # then apply the rename -->
 <!-- psm_expanded<- psm_expanded %>% rename(!!!name_map) -->
-<!-- write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv") -->
+<!-- write.csv(psm_expanded,"combine_protein_peptidenumber_rename_updated.csv") -->
 
 <!-- # add the specific columns min values -->
-<!-- psm_expanded -->
+<!-- psm_expanded %>% filter(min_psm >=1) %>% nrow() -->
 <!-- # for selected column -->
 
-<!-- SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:10,"_psm"), paste0("Case",11:20,"_psm")) -->
+<!-- SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:10), paste0("Case",11:20)) -->
 <!-- #SamplelabelSelectedlowvsnormalGFR <- c(paste0("Case", 1:20,"_psm")) -->
 <!-- colnames(psm_expanded) -->
 <!-- SamplelabelSelectednlowvsnormalGFR -->
 <!-- psm_expanded$min_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x)) -->
-<!-- write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv") -->
+<!-- write.csv(psm_expanded,"combine_protein_peptidenumber_rename_updated.csv") -->
 <!-- psm_expanded %>% head() -->
 <!-- # please attention that we need to change the Protein ID to Gene -->
 <!-- # we change the ID in the DEqMS section -->
 <!-- # sp|A0A024RBG1|NUD4B_HUMAN -->
 <!-- ``` -->
+
+
+#
+# please note we are using the following PSM
+
+Each row in combined_peptide.tsv represents a peptide (not PSM), and contains:
+A unique peptide sequence
+One or more associated proteins (in a column like Protein or Protein(s))
+Intensity or spectral data across samples (optional)
+We tried to measure the min peptide counts for the groups
+
+```{r}
+library(data.table)
+
+# We read the psm.tsv from each sample and calculate the minimum PSM counts
+# Attention, the PSM value were stored from each sample folder, we read the folder and count each protein per sample
+psm_counts <- list()
+PSMIndir <- c("/Users/XXW004/Library/CloudStorage/OneDrive-NationwideChildren'sHospital/Proteomics/RawProteomicDatasets/FullResults/")
+Samplelabel<- c(paste0("Case_", 1:20), paste0("Control_",21:40))
+Samplelabel
+# create a function to read the process one file
+process_psm<- function(sample_name){
+  CasePsm <- fread(paste0 (PSMIndir, sample_name, "/", "psm.tsv"))
+  # Optional: remove contaminants or reverse hits
+  CasePsm <- CasePsm[!grepl("Contaminant|Reverse", Protein),]
+  # Step 1: Expand multi-protein assignments (split semicolon-separated IDs)
+  psm_expanded <- separate_rows(CasePsm, Protein, sep = ";")
+  # Step 2: Count PSMs per protein per sample
+  name <- paste0(sample_name, "_psm")
+  psm_expanded %>%
+    group_by(Protein) %>%
+    summarise(!!name := n(), .groups = "drop")
+}
+
+# Process all samples and combine and generate multiple lists that contain each protein and their psm value
+psm_counts <- map(Samplelabel, process_psm)
+# We used Reduce to merge all the lists based on the protein ID.
+psm_expanded <-Reduce(function(x, y) merge(x, y, by = "Protein", all = TRUE), psm_counts)
+
+# Replace NA with 0
+psm_expanded[is.na(psm_expanded)] <- 0
+
+# Calculate the minumum PSM per protein across all samples
+psm_cols <- grep("_psm", colnames(psm_expanded), value = TRUE)
+psm_expanded[,psm_cols]
+
+# extract the min value for all the samples
+psm_expanded$min_psm<-apply(psm_expanded[,psm_cols],1, function(x) min(as.numeric(x), na.rm = TRUE))
+
+# extract the total value
+psm_expanded$sum_psm<-apply(psm_expanded[,psm_cols],1, function(x) sum(as.numeric(x), na.rm = TRUE))
+# save into a psm file
+write.csv(psm_expanded,"combine_protein_peptidenumber.csv")
+
+# please note that if you did not change the name, you don't need to perfom the following analyes
+# we need to change the name into the now name
+grep("Control_|Case_",colnames(psm_expanded),value=T)
+
+#
+colnames(psm_expanded)
+Old_name<- paste0(SampleIDTransfer$ID.By.JD, "_psm")
+New_name<- paste0(SampleIDTransfer$ID.By.MS, "_psm")
+# create the name mapping
+name_map<- setNames(Old_name, New_name)
+
+# then apply the rename
+psm_expanded<- psm_expanded %>% rename(!!!name_map)
+write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
+
+# add the specific columns min values
+psm_expanded
+# for selected column
+
+SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:10,"_psm"), paste0("Case",11:20,"_psm"))
+#SamplelabelSelectedlowvsnormalGFR <- c(paste0("Case", 1:20,"_psm"))
+colnames(psm_expanded)
+SamplelabelSelectednlowvsnormalGFR
+psm_expanded$min_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
+write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
+psm_expanded %>% head()
+# please attention that we need to change the Protein ID to Gene
+# we change the ID in the DEqMS section
+# sp|A0A024RBG1|NUD4B_HUMAN
+```
 
 # Reading the object that proproceeded with the filteration, imputation for the MaxLFQ RDS from FragPipe
 # The full preprocessing process, including filtering, normalization and immuputaion were only applied to several pipeline, including DEqMS, Limma, Wilcoxon, T test and Annova test. The other pipelines do here their own methods using the filtered results.  
@@ -546,6 +578,7 @@ library(matrixStats)
 ProteinGeneTransfer<- pro_file_update[,c(1,4)]
 psm_expanded <- psm_expanded %>% left_join(ProteinGeneTransfer, by = "Protein")
 
+write.csv(psm_expanded, file = "combine_protein_peptidenumber_rename_updated_gene.csv")
 # please note that we should only keep the proteins that used for the limma analyses.
 count_table= psm_expanded %>% filter(Gene %in% rownames(fit3)) 
 rownames(count_table) = count_table$Gene
