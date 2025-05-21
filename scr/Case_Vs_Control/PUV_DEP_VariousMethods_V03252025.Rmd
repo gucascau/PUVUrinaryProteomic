@@ -149,37 +149,37 @@ RequestedNameJD<- SampleIDTransfer %>% filter(ID.By.MS %in% RequestedName) %>% p
 RequestedNameJD
 ```
 
-# we are using the combine_peptide.tsv to measure the minimum peptide count
-```{r}
+<!-- # we are using the combine_peptide.tsv to measure the minimum peptide count, Finally we did not use these part -->
+<!-- ```{r} -->
 
-df <- read.csv(paste0(RawInputDir, "combined_final_peptide_ByJF.csv"), header = TRUE, stringsAsFactors = FALSE)
-df %>% head()
-# Identify columns
-protein_col <- "Protein"   
-sample_cols <- colnames(df)[grep("Spectral.Count", colnames(df))]  # adjust pattern if needed
-length(sample_cols)
-df[sample_cols]
-# Ensure samples are numeric
-df[sample_cols] <- lapply(df[sample_cols], as.numeric)
+<!-- df <- read.csv(paste0(RawInputDir, "combined_final_peptide_ByJF.csv"), header = TRUE, stringsAsFactors = FALSE) -->
+<!-- df %>% head() -->
+<!-- # Identify columns -->
+<!-- protein_col <- "Protein"    -->
+<!-- sample_cols <- colnames(df)[grep("Spectral.Count", colnames(df))]  # adjust pattern if needed -->
+<!-- length(sample_cols) -->
+<!-- df[sample_cols] -->
+<!-- # Ensure samples are numeric -->
+<!-- df[sample_cols] <- lapply(df[sample_cols], as.numeric) -->
 
-# Create a presence matrix: 1 if peptide present in sample (non-zero), else 0
-presence_matrix <- df
-presence_matrix[sample_cols] <- lapply(df[sample_cols], function(x) as.integer(x > 0))
+<!-- # Create a presence matrix: 1 if peptide present in sample (non-zero), else 0 -->
+<!-- presence_matrix <- df -->
+<!-- presence_matrix[sample_cols] <- lapply(df[sample_cols], function(x) as.integer(x > 0)) -->
 
-# Summarize: count peptides per protein per sample
-library(dplyr)
-peptide_counts <- presence_matrix %>%
-  group_by(across(all_of(protein_col))) %>%
-  summarise(across(all_of(sample_cols), sum), .groups = "drop")
-peptide_counts
+<!-- # Summarize: count peptides per protein per sample -->
+<!-- library(dplyr) -->
+<!-- peptide_counts <- presence_matrix %>% -->
+<!--   group_by(across(all_of(protein_col))) %>% -->
+<!--   summarise(across(all_of(sample_cols), sum), .groups = "drop") -->
+<!-- peptide_counts -->
 
-# Calculate the minimum peptide count per protein across all samples
-peptide_counts$MinPeptides <- apply(peptide_counts[sample_cols], 1, min)
-peptide_counts$SumPeptides <- apply(peptide_counts[sample_cols], 1, sum)
-peptide_counts$MidPeptides <- apply(peptide_counts[sample_cols], 1, median)
-peptide_counts %>% filter(MidPeptides >1) %>% nrow()
-
-```
+<!-- # Calculate the minimum peptide count per protein across all samples -->
+<!-- peptide_counts$MinPeptides <- apply(peptide_counts[sample_cols], 1, min) -->
+<!-- peptide_counts$SumPeptides <- apply(peptide_counts[sample_cols], 1, sum) -->
+<!-- peptide_counts$MidPeptides <- apply(peptide_counts[sample_cols], 1, median) -->
+<!-- peptide_counts %>% filter(MidPeptides >1) %>% nrow() -->
+<!-- peptide_counts -->
+<!-- ``` -->
 
 <!-- # please note we used the peptide.tsv for the input to measure the minum peptide  -->
 <!-- ```{r} -->
@@ -281,7 +281,7 @@ Each row in combined_peptide.tsv represents a peptide (not PSM), and contains:
 A unique peptide sequence
 One or more associated proteins (in a column like Protein or Protein(s))
 Intensity or spectral data across samples (optional)
-We tried to measure the min peptide counts for the groups
+We tried to measure the min and median peptide counts for the groups
 
 ```{r}
 library(data.table)
@@ -321,6 +321,9 @@ psm_expanded[,psm_cols]
 # extract the min value for all the samples
 psm_expanded$min_psm<-apply(psm_expanded[,psm_cols],1, function(x) min(as.numeric(x), na.rm = TRUE))
 
+# extract the median value
+psm_expanded$median_psm<-apply(psm_expanded[,psm_cols],1, function(x) median(as.numeric(x), na.rm = TRUE))
+
 # extract the total value
 psm_expanded$sum_psm<-apply(psm_expanded[,psm_cols],1, function(x) sum(as.numeric(x), na.rm = TRUE))
 # save into a psm file
@@ -336,7 +339,7 @@ Old_name<- paste0(SampleIDTransfer$ID.By.JD, "_psm")
 New_name<- paste0(SampleIDTransfer$ID.By.MS, "_psm")
 # create the name mapping
 name_map<- setNames(Old_name, New_name)
-
+name_map
 # then apply the rename
 psm_expanded<- psm_expanded %>% rename(!!!name_map)
 write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
@@ -345,11 +348,12 @@ write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
 psm_expanded
 # for selected column
 
-SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:10,"_psm"), paste0("Case",11:20,"_psm"))
+SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:20,"_psm"), paste0("Case",11:20,"_psm"))
 #SamplelabelSelectedlowvsnormalGFR <- c(paste0("Case", 1:20,"_psm"))
 colnames(psm_expanded)
 SamplelabelSelectednlowvsnormalGFR
-psm_expanded$min_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
+psm_expanded$min_pep_casevsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
+psm_expanded$median_pep_casevsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) median(x))
 write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
 psm_expanded %>% head()
 # please attention that we need to change the Protein ID to Gene
@@ -585,7 +589,7 @@ rownames(count_table) = count_table$Gene
 length(count_table$min_psm) ## to be consistent.
 
 # set up the protein counts.
-fit3$count = count_table[rownames(fit3$coefficients),"min_psm"]
+fit3$count = count_table[rownames(fit3$coefficients),"median_psm"]
 
 # Remove missing spectral counts
 
@@ -883,8 +887,9 @@ data_results <- get_results(dep)
 data_results = data_results[with(data_results,order(Case_vs_Controls_p.val)),]
 data_results %>% head()
 write.csv(data_results,"PUV_DEP_results_PUVvsControl.csv")
-      ```
 
+```
+      
 # MSstats: 
 https://www.bioconductor.org/packages/release/bioc/vignettes/MSstats/inst/doc/MSstatsWorkflow.html
 

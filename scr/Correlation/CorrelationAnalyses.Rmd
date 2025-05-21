@@ -176,8 +176,6 @@ ggplot(CaseExpressedProteins_Nolog, aes(spearmanGFRRho, fill=Correlation)) +geom
 dev.off()
 
 
-
-
 # generate the scatter plots for these high correlated proteins
 
 

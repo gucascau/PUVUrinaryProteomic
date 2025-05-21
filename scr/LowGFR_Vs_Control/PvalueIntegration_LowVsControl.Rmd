@@ -224,7 +224,7 @@ TestPvalue %>% filter(FinalP_Fisher <=0.05) %>% nrow()
 TestPvalue %>% filter(FinalP_Tippett <=0.05) %>% nrow()
 # save final P values
 FinalCombinedPvalue_FC_all %>% head()
-TestPvalue %>% rownames_to_column("ID") %>% head()
+TestPvalue %>% rownames_to_column("ID") %>% head()a
 FinalCombinedPvalue_FC_all_final<- FinalCombinedPvalue_FC_all %>% inner_join(TestPvalue %>% rownames_to_column("ID"),by ="ID") %>% arrange(FinalP_Fisher)
 #FinalCombinedPvalue_FC_all_final %>% arrange(FinalP_Fisher)
 write.csv(FinalCombinedPvalue_FC_all_final, file = "FinalCombinedPvalue_IntegratedMethods.csv")

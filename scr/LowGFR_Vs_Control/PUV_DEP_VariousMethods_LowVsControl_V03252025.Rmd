@@ -223,6 +223,11 @@ psm_expanded$min_psm<-apply(psm_expanded[,psm_cols],1, function(x) min(as.numeri
 
 # extract the total value
 psm_expanded$sum_psm<-apply(psm_expanded[,psm_cols],1, function(x) sum(as.numeric(x), na.rm = TRUE))
+
+# extract the median value
+psm_expanded$median_psm<-apply(psm_expanded[,psm_cols],1, function(x) median(as.numeric(x), na.rm = TRUE))
+
+
 # save into a psm file
 write.csv(psm_expanded,"combine_protein_peptidenumber.csv")
 
@@ -241,7 +246,7 @@ name_map<- setNames(Old_name, New_name)
 psm_expanded<- psm_expanded %>% rename(!!!name_map)
 write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
 
-# add the specific columns min values
+# Note: add the specific columns we used the median values instead of min values
 psm_expanded
 # for selected column
 
@@ -249,7 +254,7 @@ SamplelabelSelectednlowGFR <- c(paste0("Case", 1:10,"_psm"), paste0("Control",1:
 #SamplelabelSelectedlowGFR <- c(paste0("Case", 1:20,"_psm"))
 colnames(psm_expanded)
 SamplelabelSelectednlowGFR
-psm_expanded$min_pep_lowGFR <- apply (psm_expanded[,SamplelabelSelectednlowGFR],1, function(x) min(x))
+psm_expanded$median_pep_lowGFR <- apply (psm_expanded[,SamplelabelSelectednlowGFR],1, function(x) median(x))
 
 
 write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
@@ -514,19 +519,19 @@ psm_expanded %>% head()
 colnames(psm_expanded)
 
 rownames(fit3)
-count_table
-psm_expanded %>% filter(Gene %in% rownames(fit3)) 
+
+psm_expanded %>% filter(Gene.x %in% rownames(fit3)) 
 # please note that we should only keep the proteins that used for the limma analyses.
-count_table= psm_expanded %>% filter(Gene %in% rownames(fit3)) 
-rownames(count_table) = count_table$Gene
+count_table= psm_expanded %>% filter(Gene.x %in% rownames(fit3)) 
+rownames(count_table) = count_table$Gene.x
 length(rownames(fit3))
 count_table
-length(count_table$min_pep_lowGFR) ## to be consistent.
+length(count_table$median_pep_lowGFR) ## to be consistent.
 rownames(count_table)
 rownames(fit3$coefficients)
 rownames(fit3$coefficients)
 # set up the protein counts.
-fit3$count = count_table[rownames(fit3$coefficients),"min_pep_lowGFR"]
+fit3$count = count_table[rownames(fit3$coefficients),"median_pep_lowGFR"]
 fit3
 # Remove missing spectral counts
 

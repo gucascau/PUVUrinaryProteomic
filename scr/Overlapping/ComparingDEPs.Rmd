@@ -77,32 +77,32 @@ DEPsLowGFRvsHighGFR<- read.csv(paste0(Indir, "Intensity_Analyses_LowGFRVsNormalG
 # Generate DEPs from high GFR cases, low GFR cases, all cases comparing to controls 
 
 # DEPs from case vs control
-DEPsCasevsControlsDEProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
-DEPsCasevsControlsUpProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+DEPsCasevsControlsDEProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
+DEPsCasevsControlsUpProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
 
-DEPsCasevsControlsDownProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+DEPsCasevsControlsDownProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.586)
 
 # DEPs from normal eGFR vs control
-DEPsNormalGFRvsControlsDEProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
+DEPsNormalGFRvsControlsDEProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
 
-DEPsNormalGFRvsControlsUpProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+DEPsNormalGFRvsControlsUpProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
 
-DEPsNormalGFRvsControlsDownProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+DEPsNormalGFRvsControlsDownProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.586)
 
 
 # DEPs from low eGFR vs control
-DEPsLowGFRvsControlsDEProteins <- DEPsLowGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
+DEPsLowGFRvsControlsDEProteins <- DEPsLowGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
 
-DEPsLowGFRvsControlsUpProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+DEPsLowGFRvsControlsUpProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
 
-DEPsLowGFRvsControlsDownProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+DEPsLowGFRvsControlsDownProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.586)
 
 # DEPs from low eGFR vs high eGFR
-DEPsLowGFRvsHighGFRDEProteins <- DEPsLowGFRvsHighGFR%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & (max_logFC >=0.586 | max_logFC <= -0.586))
+DEPsLowGFRvsHighGFRDEProteins <- DEPsLowGFRvsHighGFR%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
 
-DEPsLowGFRvsHighGFRUpProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC >=0.586)
+DEPsLowGFRvsHighGFRUpProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
 
-DEPsLowGFRvsHighGFRDownProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.01 & max_logFC <=-0.586)
+DEPsLowGFRvsHighGFRDownProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.586)
 
 
 # the expression datasets of the different proteins
@@ -310,7 +310,7 @@ selectedUPregulatedPathwayForfigurePlot<- p1+ geom_point(aes(size=-log10(p.adjus
 
 ggsave("selectedUPregulatedPathwayForDotPlot.pdf", plot =selectedUPregulatedPathwayForfigurePlot, height = 6.5, width = 7 )
 
-```
+ ```
 
 # Generate the fold changes heatmap for each comparision
 ```{r}

@@ -58,12 +58,12 @@ library(org.Hs.eg.db)
 ```{r setup, include=FALSE}
 ## read the table
 #rm(list= ls())
-setwd("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_LowGFRVsControls/")
+setwd("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_LowGFRVsNormalGFR/")
 
 OutDir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_LowGFRVsNormalGFR/")
 ## set up the input dir
 
-InputDir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_LowGFRVsControls/")
+InputDir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_LowGFRVsNormalGFR/")
 
 # the input dir for clinical characteritic
 ClinicInputDir<- c("/Users/XXW004/Documents/Projects/DarylMcleod/Data Analysis/")
@@ -224,6 +224,9 @@ psm_expanded$min_psm<-apply(psm_expanded[,psm_cols],1, function(x) min(as.numeri
 
 # extract the total value
 psm_expanded$sum_psm<-apply(psm_expanded[,psm_cols],1, function(x) sum(as.numeric(x), na.rm = TRUE))
+
+# extract the median value
+psm_expanded$median_psm<-apply(psm_expanded[,psm_cols],1, function(x) median(as.numeric(x), na.rm = TRUE))
 # save into a psm file
 write.csv(psm_expanded,"combine_protein_peptidenumber.csv")
 
@@ -252,6 +255,7 @@ SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:10,"_psm"), paste0("Cas
 colnames(psm_expanded)
 SamplelabelSelectednlowvsnormalGFR
 psm_expanded$min_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
+psm_expanded$median_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
 
 
 write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
@@ -533,7 +537,7 @@ rownames(count_table)
 rownames(fit3$coefficients)
 rownames(fit3$coefficients)
 # set up the protein counts.
-fit3$count = count_table[rownames(fit3$coefficients),"min_pep_lowvsnormalGFR"]
+fit3$count = count_table[rownames(fit3$coefficients),"median_pep_lowvsnormalGFR"]
 fit3
 # Remove missing spectral counts
 
