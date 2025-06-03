@@ -74,15 +74,15 @@ nrow(Upregulated)
 FinalIntegratedMethodsVolcano<-ggplot(FinalIntegratedMethods,aes(x=max_logFC,y=-log10(FinaladjP_Fisher)))+
   geom_point(size=1,color= ifelse(FinalIntegratedMethods$FinaladjP_Fisher<=0.05 & FinalIntegratedMethods$max_logFC>=0.58,"red",
                                   ifelse(FinalIntegratedMethods$FinaladjP_Fisher<=0.05 & FinalIntegratedMethods$max_logFC<=-0.58,"blue","gray")))+ 
-  geom_text_repel(aes(label=ifelse(FinalIntegratedMethods$FinaladjP_Fisher<=0.001 & (FinalIntegratedMethods$max_logFC >=2 | FinalIntegratedMethods$max_logFC<=-2) ,as.character(ID),'')),segment.size=0.01,
-                  hjust=0.2, size=3)+
+  # geom_text_repel(aes(label=ifelse(FinalIntegratedMethods$FinaladjP_Fisher<=0.001 & (FinalIntegratedMethods$max_logFC >=2 | FinalIntegratedMethods$max_logFC<=-2) ,as.character(ID),'')),segment.size=0.01,
+  #                 hjust=0.2, size=3)+
   
   theme_bw()+
   theme(plot.background = element_blank(),
         text = element_text(size=16),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        panel.background = element_blank()) + ylim(c(0,30))
+        panel.background = element_blank()) + ylim(c(0,30)) +xlim(c(-4,4))
 
 ggsave("FinalIntegratedMethods_volcanoPlots_LowGFRPUVvsControl.pdf", plot =FinalIntegratedMethodsVolcano, height = 4, width = 4 )
 FinalIntegratedMethodsVolcano
@@ -95,7 +95,9 @@ DownRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.0
 
 colnames(FinalIntegratedMethods)
 # generate the selected columns
-SelectedColumnForPublication<- c("ID","Limma_logFC",	"Limma_AveExpr",	"Limma_P.Value.x",	"Limma_adj.P.Val", "DEqMS_sca.P.Value.x",	"DEqMS_sca.adj.pval",	"DEqMS_log.sca.pval","proDA_pval.x",	"proDA_adj_pval",	"proDA_diff","proDA_avg_abundance", "ROTS_logFC",	"ROTS_P.Value.x",	"ROTS_adj.pval", "Wilcoxon_logFC",	"Wilcoxon_P.Value.x",	"Wilcoxon_adj.pval", "DEP_LCase_vs_HCase_p.val.x",	"DEP_LCase_vs_HCase_p.adj",	"DEP_LCase_vs_HCase_ratio", "MSstats_log2FC", "MSstats_pvalue.x",	"MSstats_adj.pvalue", "Mascot_GFRwilpvalue", "Mascot_GFRPadjust", "Mascot_GFRLogFC", "max_logFC", "FinalP_empirical",	"FinalP_Fisher",	"FinalP_Tippett",	"FinalP_Stouffer",	"FinaladjP_Fisher",	"FinaladjP_Tippett",	"FinaladjP_Stouffer",	"FinaladjP_empirical")
+SelectedColumnForPublication<- c("ID","max_logFC","FinalP_Fisher","FinaladjP_Fisher","Limma_logFC",	"Limma_P.Value.x",	"Limma_adj.P.Val",  "DEqMS_logFC","DEqMS_sca.P.Value.x",	"DEqMS_sca.adj.pval",	"proDA_diff", "proDA_pval.x",	"proDA_adj_pval",	 "ROTS_logFC",	"ROTS_P.Value.x",	"ROTS_adj.pval", "Wilcoxon_logFC",	"Wilcoxon_P.Value.x",	"Wilcoxon_adj.pval", "DEP_LCase_vs_HCase_ratio","DEP_LCase_vs_HCase_p.val.x",	"DEP_LCase_vs_HCase_p.adj",	 "MSstats_log2FC", "MSstats_pvalue.x",	"MSstats_adj.pvalue", "Mascot_GFRLogFC","Mascot_GFRwilpvalue", "Mascot_GFRPadjust",  "max_logFC", "FinalP_empirical",	"FinalP_Fisher",	"FinalP_Tippett",	"FinalP_Stouffer",	"FinaladjP_Fisher",	"FinaladjP_Tippett",	"FinaladjP_Stouffer",	"FinaladjP_empirical")
+
+#SelectedColumnForPublication<- c("ID","max_logFC","FinalP_Fisher","FinaladjP_Fisher","Limma_logFC",	"Limma_P.Value.x",	"Limma_adj.P.Val", "DEqMS_logFC","DEqMS_sca.P.Value.x",	"DEqMS_sca.adj.pval",	"proDA_diff","proDA_pval.x",	"proDA_adj_pval", "ROTS_logFC",	"ROTS_P.Value.x",	"ROTS_adj.pval", "Wilcoxon_logFC",	"Wilcoxon_P.Value.x",	"Wilcoxon_adj.pval", "DEP_Case_vs_Controls_ratio","DEP_Case_vs_Controls_p.val.x",	"DEP_Case_vs_Controls_p.adj",	 "MSstats_log2FC", "MSstats_pvalue.x",	"MSstats_adj.pvalue","Mascot_GFRLogFC", "Mascot_GFRwilpvalue", "Mascot_GFRPadjust",  "max_logFC", "FinalP_empirical",	"FinalP_Fisher",	"FinalP_Tippett",	"FinalP_Stouffer",	"FinaladjP_Fisher",	"FinaladjP_Tippett",	"FinaladjP_Stouffer",	"FinaladjP_empirical")
 
 UpRegulatedProteinsFinal<- UpRegulatedProteins %>%  dplyr::select(all_of(SelectedColumnForPublication))
 
@@ -202,19 +204,6 @@ RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
   labs(title = PathwayName, size = "-log10(p value)", color = "LogFC")
 RequestedGenesDotPlot
 ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD_LowGFRPUVvsControl.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
-
-
-RequestedGenesDotPlot
-FinalExpDEGs$Gene
-FinalExpDEGs$Gene <- factor(FinalExpDEGs$Gene, levels = c("Atp6v1g3","Atp6v1c2", "Atp6v1b1", "Atp6v0d2","Atp6v0a4"))  
-
-ggplot(FinalExpDEGs, aes(x = log2FoldChange, y = Gene, fill = Group)) +
-  geom_bar(stat = "identity", position = "dodge",color = "black") +  # "dodge" separates bars for each category
-  labs(x = "Log2Fold Change",
-       y = "Genes") +
-  theme_classic() + 
-  scale_fill_grey(start = 0.3, end = 0.9) +  # Apply gray color scale
-  theme(legend.position = "top") 
 
 ```
 

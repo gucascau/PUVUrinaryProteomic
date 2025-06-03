@@ -255,13 +255,13 @@ SamplelabelSelectednlowvsnormalGFR <- c(paste0("Case", 1:10,"_psm"), paste0("Cas
 colnames(psm_expanded)
 SamplelabelSelectednlowvsnormalGFR
 psm_expanded$min_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
-psm_expanded$median_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) min(x))
+psm_expanded$median_pep_lowvsnormalGFR <- apply (psm_expanded[,SamplelabelSelectednlowvsnormalGFR],1, function(x) median(x))
 
 
 write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
 
 
-#psm_expanded %>% head()
+psm_expanded %>% head()
 ```
 
 # Reading the object that proproceeded with the filteration, imputation for the MaxLFQ RDS from FragPipe
@@ -525,7 +525,7 @@ psm_expanded %>% head()
 colnames(psm_expanded)
 
 rownames(fit3)
-count_table
+#count_table
 psm_expanded %>% filter(Gene %in% rownames(fit3)) 
 # please note that we should only keep the proteins that used for the limma analyses.
 count_table= psm_expanded %>% filter(Gene %in% rownames(fit3)) 

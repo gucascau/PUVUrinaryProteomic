@@ -249,6 +249,7 @@ colnames(psm_expanded)
 psm_expanded$min_pep_normaleGFR <- apply (psm_expanded[,SamplelabelSelectednormaleGFR],1, function(x) min(x))
 
 psm_expanded$min_pep_lowvsnormaleGFR <- apply (psm_expanded[,SamplelabelSelectedlowGFRnormal],1, function(x) min(x))
+psm_expanded$median_pep_lowvsnormaleGFR <- apply (psm_expanded[,SamplelabelSelectedlowGFRnormal],1, function(x) median(x))
 write.csv(psm_expanded,"combine_protein_peptidenumber_rename.csv")
 
 ```

@@ -39,7 +39,7 @@ library("ggvenn")
 # read and create the folders for the comparisions
 ```{r}
 # set up the working directory
-Outdir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/OverlappingComparisons/")
+Outdir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/OverlappingComparisons/LogFC1/")
 
 # the DEPs were stored in the different folders 
 Indir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/")
@@ -78,44 +78,39 @@ DEPsLowGFRvsHighGFR<- read.csv(paste0(Indir, "Intensity_Analyses_LowGFRVsNormalG
 # Generate DEPs from high GFR cases, low GFR cases, all cases comparing to controls 
 DEPsCasevsControls%>%dplyr:: select(ID,FinaladjP_Stouffer, max_logFC) %>% filter(FinaladjP_Stouffer <=0.05 & (max_logFC >=1 | max_logFC <= -1)) %>% nrow()
 
-DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Stouffer, max_logFC) %>% filter(FinaladjP_Stouffer <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586)) %>% nrow()
-DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))%>% nrow()
+DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Stouffer, max_logFC) %>% filter(FinaladjP_Stouffer <=0.05 & (max_logFC >=1 | max_logFC <= -1)) %>% nrow()
+DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=1 | max_logFC <= -1))%>% nrow()
 
 # this is way too stringent
-DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Tippett, max_logFC) %>% filter(FinaladjP_Tippett <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586)) %>% nrow()
+DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Tippett, max_logFC) %>% filter(FinaladjP_Tippett <=0.05 & (max_logFC >=1 | max_logFC <= -1)) %>% nrow()
 
 # DEPs from case vs control
-DEPsCasevsControlsDEProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
-DEPsCasevsControlsDEProteins %>% filter(ID == "DDR1")
-DEPsCasevsControlsUpProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
+DEPsCasevsControlsDEProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=1 | max_logFC <= -1))
+DEPsCasevsControlsUpProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=1)
 
-DEPsCasevsControlsDownProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <= -0.586)
+DEPsCasevsControlsDownProteins <- DEPsCasevsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-1)
 
 # DEPs from normal eGFR vs control
-DEPsNormalGFRvsControlsDEProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
+DEPsNormalGFRvsControlsDEProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=1 | max_logFC <= -1))
 
-# DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(ID == "KNG1")
-# DEPsNormalGFRvsControlsDEProteins %>% filter(ID == "KNG1")
+DEPsNormalGFRvsControlsUpProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=1)
 
-DEPsNormalGFRvsControlsUpProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
-
-DEPsNormalGFRvsControlsDownProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.586)
+DEPsNormalGFRvsControlsDownProteins <- DEPsNormalGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-1)
 
 
 # DEPs from low eGFR vs control
-DEPsLowGFRvsControlsDEProteins <- DEPsLowGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
-DEPsLowGFRvsControlsDEProteins %>% filter(ID == "KNG1")
+DEPsLowGFRvsControlsDEProteins <- DEPsLowGFRvsControls%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=1 | max_logFC <= -1))
 
-DEPsLowGFRvsControlsUpProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
+DEPsLowGFRvsControlsUpProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=1)
 
-DEPsLowGFRvsControlsDownProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.586)
+DEPsLowGFRvsControlsDownProteins <- DEPsLowGFRvsControls %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-1)
 
 # DEPs from low eGFR vs high eGFR
-DEPsLowGFRvsHighGFRDEProteins <- DEPsLowGFRvsHighGFR%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=0.586 | max_logFC <= -0.586))
+DEPsLowGFRvsHighGFRDEProteins <- DEPsLowGFRvsHighGFR%>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & (max_logFC >=1 | max_logFC <= -1))
 
-DEPsLowGFRvsHighGFRUpProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.586)
+DEPsLowGFRvsHighGFRUpProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC >=1)
 
-DEPsLowGFRvsHighGFRDownProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.586)
+DEPsLowGFRvsHighGFRDownProteins <- DEPsLowGFRvsHighGFR %>% dplyr:: select(ID,FinaladjP_Fisher, max_logFC) %>% filter(FinaladjP_Fisher <=0.05 & max_logFC <=-1)
 
 
 # the expression datasets of the different proteins
@@ -227,7 +222,7 @@ ExpressedProteins[match(FinalUpGenelistOrder %>% unlist(), rownames(ExpressedPro
 Reduce(intersect,UpComparision)
 
 Reduce(intersect,DownComparision)
-
+DEGComparision
 ```
 
 # gene ontlogy comparision
@@ -341,29 +336,9 @@ PathwayName <- "Conserved Proteins"
 RequestedGenes<-  FinalDEGconservedGenelist %>% unlist() %>% unique()
 PathwayName <- "Normal eGFR specific"
 RequestedGenes <- FinalEarlySpecificDEGconservedGenelist%>% unlist() %>% unique()
-
-
-PathwayName <- "FinalTissueSpecificProteins"
-RequestedGenes<-  c("CLU","IGFBP7","S100P","PLAU","CD9","RAB21","APOA4","VASN","CPE","B4GAT1","DEFB1","CDH2","GP2","AMY1B","EGF","ATP5F1B","ATP5F1A","HEBP1","SFN","KRT17","KRT14","KRT5","UPK1A","UPK2","NRXN1","CALB1","AQP2","UMOD","FREM2","VCAM1","CUBN","LRP2")
-
-
-PathwayName<- "FinalConservedBiomarkers"
-
-RequestedGenes <- c("B2M","APOD","CAMP","ARG1","LYZ","BASP1","SERPINB1","SDCBP","RAB21","ATP6AP2","PSMA5","CHMP5","TOLLIP","CAT","MARCKSL1","NCCRP1","RARRES1","KRT77","ZG16B","CD9","PLAU","S100P","S100A11","IGFBP2","MUC20","GPRC5C","CDSN","APOA4","PRSS8","GP2","SPAST","MAN1A1","EXTL2","DEFB1","ASAP2","GPRC5B","AMY1B","EGF","SLC1A1","CDH2","LCAT","COL4A2","COL4A1","BGN","IGFBP7","COL6A1","PPIC","TIMP2","VTN","VASN","B4GAT1","CPE","CLEC3B","PCOLCE","PROCR","CXCL12","CLU")
-
-
-PathwayName<- "FinalEarlyBiomarkers"
-RequestedGenes <- c("HEBP1","GHITM","ATP5F1B","ATP5F1A","KRT78","KRT5","DSP","KRT14","DAG1","STK24","ERLIN2","CASP14","KRT17","SFN","UPK1A","UPK2","GDPD3","CCL15","PLCD1","KRT1","KRT9","KRT2","PGLYRP2","HBB","SGSH","CLEC4G","CD109","HP","CSTA","VCAN","FBLN1","SLPI","KRT10","CD63","SLC2A13","NRXN1","LBP","CALB1","AHSG")
-
-PathwayName<- "FinalLateBiomarkers"
-RequestedGenes <-c("FTH1","FTL","NPC2","MYL6","RPS28","RPS27A","ZP3","LY6D","HAS3","CTSZ","AKR1B1","GAA","LYPD2","C2","TPP1","CD68","CYBB","IFI30","CPVL","C1QB","C1QC","RNASE1","APOE","TREML1","PIP","FCER2","IGHV1−2","IGKV1D−16","IGKV1−39","IGHV5−51","CD27","TXNDC5","PRG2","GP1BA","CD84","LAIR1","CD300A","IGLV2−23","IGHV1−18","IGKV3D−15","IGHA1","IGKV3−20","IGKV1−5","IGKV2−30","IGLV3−10","IGHV3−13","IGLC3","IGHG3","IGHG4","CD58","ATP6V0D1","ITGAM","GNA13","LAMP2","SIRPA","SERPINA1","SIRPB1","MNDA","LILRA5","B3GNT2","LTA4H","ARL8B","B4GALT1","SCPEP1","A1BG","BTN2A1","PLEKHB2","RAB5A","RAB35","ARPC3","TKT","VPS35","TALDO1","VPS4B","ARPC5","CAP1","IDS","CAPZA1","ACTR3","CTSS","PPT1","ITGB2","LCP1","GMFG","CD44","SERPIND1","CTSO","VAT1","TSPAN4","EPHB3","RBP4","SERPINA3","CFB","MXRA8","NGFR","MXRA5","LAMC1","COL5A2","PDGFRA","ELANE","C3","GAS1","C1S","PENK","SERPING1","COL6A2","OGN","GSN","CYBRD1","MYLK","CKB","AGT","PCYOX1","CFHR1","SUSD5","ACAN","MCAM","NOTCH3","ENDOD1","CZIB","GINM1","VTA1","MINPP1","EWSR1","PDCD6IP","SPPL2A","CGA","KRT86","SPOCK2","HSPA5","RAC1","FKBP1A","ANXA1","PRDX1","NUTF2","EIF6","MIEN1","PPIB","TMED9","HMGN2","NEDD8","PSMA7","PEBP1","SOD1","VPS28","UBE2L3","CALR","ABHD14B","RHOC","ITGB1","RAB14","TXNL1","CHMP3","YIPF3","EEF1G","NME2","TMED7","CANX","SERPINB6","SDF4","VPS4A","SAMM50","ENOPH1","PLXND1","LRRC15","CYTL1","CDH5","IL18BP","PECAM1","CD93","GASK1B","PRCP","FCN2","EFNB2","AQP1","SMPDL3B","DPP4","LRRC19","SLC5A9","KHK","COL17A1","C4BPA","SMIM24","REG1B","FCGBP","FABP6","APOB","GUCA2B","C8G","MB","CDHR2","AOC1","SOX1","APOA2","TMEM198","SUSD2","MELTF","ACP2","TNFRSF14","SCGB1A1","SAA4","S100A7","PROM2","NECTIN1","GPC1","PFN2","SPRR1B","MSMB","EPS8L1","LYPD6B","SMIM5","NDRG2","FAM3B","SPINT1","CYSTM1","TACSTD2","ERO1A","WFDC2","ATP1B1","TMPRSS2","TNFRSF10C","ORM2","MEGF9","ANXA3","QPCT","LRG1","VCAM1","GPC4","H1−2","FLG","FGA","FGG","LPA","REG1A","FGB","HGFAC","PROM1","IGLC7","GPX3","GC","CLDN10","CUBN","LRP2","ALB","C4B","NAPSA","GGT1","SERPINA6","BHMT","CADM4","SLC15A2","ALCAM","CNDP1","PTPRJ","CHL1","EPS8","AZGP1","EPS8L2","OIT3","SCIN","EPHB2","ROR2","NCAM2","CPN1","FETUB","HRG","UMOD","CA2","FGFR2","TRHDE","FREM2","MEGF8","ADSS2","ATRN","UEVLD","MADCAM1","SMO","MT3","CPB2","DNER","HMCN1","INHBC","COL7A1","PALS1","CPNE8","TF","MME","NECTIN3","HPX","PTPRD","C5","H2BC12","BCAM","CCN2","EPHA4","BMPR2","PLS3","C1RL","CFI","PROS1","IL6ST","FZD4","APP","IGFBP1","NTM","OPCML","CNTN1","RTN4RL1","NRP1","CNTN3","NEO1","SERPINC1")
-
 FinalExpDEGs<-FinalFoldChangePvalues %>%  filter( ID %in% RequestedGenes)
 
 FinalExpDEGs 
-
-# 
-
 # we then generate a heatmap for the 
 
 # assign signaficance labels
@@ -377,7 +352,7 @@ levels(FinalExpDEGs$Group)
 levels(as.factor(FinalExpDEGs$ID))
 
 
-FinalExpDEGs$ID <- factor(as.factor(FinalExpDEGs$ID), levels = rev(RequestedGenes))
+FinalExpDEGs$ID <- factor(as.factor(FinalExpDEGs$ID), levels = RequestedGenes)
 levels(FinalExpDEGs$ID)
 
 FinalExpDEGs %>% head()
@@ -392,10 +367,10 @@ RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)
   theme_minimal() +  # Clean theme
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
   labs(title = PathwayName, fill = "logFC") +
-  theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) 
+  theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
 RequestedGenesHeatmap
 
-ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 35, width =3.5 )
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =5 )
 RequestedGenesHeatmap
 
 RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
