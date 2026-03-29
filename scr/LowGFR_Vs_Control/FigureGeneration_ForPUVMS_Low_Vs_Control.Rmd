@@ -48,6 +48,18 @@ setwd(OutDir)
 ```{r}
 FinalIntegratedMethods <-read.csv(paste0(InputDir,"FinalCombinedPvalue_IntegratedMethods.csv"))
 
+# original spectral counts
+
+SpectralCountsMatrix <- read.csv("/Users/XXW004/Documents/Projects/DarylMcleod/RawData/Final_Used/combined_final_protein_ByJF.csv")
+
+SpectralColumNames <- c(paste0("Case",1:20,".Spectral.Count"), paste0("Control",1:20,".Spectral.Count"))
+SpectralColumNames
+# select the protein spectral counts matrix
+FinalSpectralCountMatrix<- SpectralCountsMatrix[, c("Gene",SpectralColumNames)]
+FinalSpectralCountMatrix %>% head()
+# calculate the final spectral average counts
+
+
 ```
 
 # Generate figures

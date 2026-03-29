@@ -411,6 +411,24 @@ ggsave("FinalEarlySpecificDEGAverageheatmap.pdf",plot =FinalEarlySpecificDEGAver
 
 FinalEarlySpecificDEGconservedGenelist %>% unlist()
 
+# Generate the heatmap for the late conserved genes
+
+FinalLateSpecificDEGconservedGenelistForAverageheatmap <-ExpressedProteins[match(FinalLoweGFRBiomarkers %>% unlist(), rownames(ExpressedProteins)),c("LoweGFRaveExp","HigheGFRaveExp","ControlaveExp")]
+
+FinalLateSpecificDEGAverageheatmap<- FinalLateSpecificDEGconservedGenelistForAverageheatmap %>% na.omit()%>% pheatmap::pheatmap(scale = "row",cluster_rows=T, cluster_cols = FALSE,treeheight_row = 0, show_rownames = FALSE, angle_col = 45,color = colorRampPalette(c("#6495ED", "white", "#FA8072"))(100))
+
+ggsave("FinalLateSpecificDEGAverageheatmap.pdf",plot =FinalLateSpecificDEGAverageheatmap, height = 8, width = 5 )
+
+# add another figure for genes involved in Kidney development
+KidneyRelatedGenes <- c("LRP2","CUBN","UMOD","AQP2","AQP1","PECAM1","GAS6","ADGRF5","PODXL","MCAM","GPC3","FREM2","PROM1","SDC1","SDC4","PDGFRA","AKR1B1","FGFR2","MME","TACSTD2") %>% unique()
+
+KidneyRelateFinalLateSpecificDEGconservedGenelistForAverageheatmap <-ExpressedProteins[match(KidneyRelatedGenes %>% unlist(), rownames(ExpressedProteins)),c("LoweGFRaveExp","HigheGFRaveExp","ControlaveExp")]
+
+KidneyRelateFinalLateSpecificDEGAverageheatmap<- KidneyRelateFinalLateSpecificDEGconservedGenelistForAverageheatmap %>% na.omit()%>% pheatmap::pheatmap(scale = "row",cluster_rows=F, cluster_cols = FALSE,treeheight_row = 0, show_rownames = T, angle_col = 45,color = colorRampPalette(c("#6495ED", "white", "#FA8072"))(100))
+
+ggsave("KidneyRelateFinalLateSpecificDEGAverageheatmap.pdf",plot =KidneyRelateFinalLateSpecificDEGAverageheatmap, height = 8, width = 5 )
+
+
 # save into the files
 FinalEarlySpecificMarkers<- FinalHigheGFRBiomarkers %>% unlist()
 

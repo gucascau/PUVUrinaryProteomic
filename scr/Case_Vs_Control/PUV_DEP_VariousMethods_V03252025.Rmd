@@ -482,7 +482,7 @@ DEG_Intens_long<- reshape2::melt(IntensData, id.vars = "ProteinID")
 DEG_Intens_long %>%  head()
 # plot density
 
-ggplot(DEG_Intens_long, aes(x = value, color = variable, fill = variable)) +
+ggplot(DEG_Intens_long, aes(x = log10(value), color = variable, fill = variable)) +
   geom_density(alpha = 0.3) +
   theme_minimal() +
   labs(title = "Density Plots for Each Sample without Log2", x = "Value", y = "Density")
@@ -494,7 +494,9 @@ dat.log.exp.long <- reshape2::melt(dat.log.exp)
 
 
 # 
+# 
 dat.log.exp.long %>%  head()
+pdf("DensityPlotForEachSamplewithLog2Imputation.pdf", height = 8, width = 10)
 ggplot(dat.log.exp.long, aes(x = value, color = Var2, fill = Var2)) +
   geom_density(alpha = 0.3) +
   theme_minimal() +
@@ -530,6 +532,94 @@ boxplot(dat.log.exp, main ="PUV proteomic")
 
 # We generate the final expressed dataset, this dataset have already performed the filtering, pimputation. 
 str(dat.log.exp)
+
+# other PCA methods
+
+# 5. Scale data (z-score normalization)
+# -----------------------------
+##### generate a PCA analysese
+
+colorDiff<-c(rep("blue",20), rep("brown",20))
+
+mds <- plotMDS(dat.log.exp, col=colorDiff)
+toplot <- data.frame(Dim1 = mds$x, Dim2 = mds$y)
+library(ggplot2)
+#ggplot(toplot, aes(Dim1, Dim2))+ geom_point() +
+# geom_text_repel(label=label_name,segment.size=0.01,hjust=0.2, size=3,  col=c(rep("gray",5),rep("black",4),rep("blue",4), rep("red",4), rep("yellow",4),rep("violet",4),rep("brown",4),rep("blue",4),))+
+#  theme_classic()
+#geom_text( label = label_name, nudge_x = 0.1, nudge_y = 0.1,  check_overlap = T)+
+#theme_bw() + 
+#  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+#Gcol<-c(rep("gray",5),rep("black",4),rep("blue",4), rep("red",4),rep("brown",4),rep("yellow",4),rep("navy blue",3), rep("purple",4),rep("LimeGreen",4),rep("pink",4),rep("orange",4), rep("magenta",4))
+pdf("MDSanalyses.pdf", width = 6, height = 6)
+ggplot(toplot, aes(Dim1, Dim2))+ geom_point(col=colorDiff) +
+  geom_text_repel(label=colnames(dat.log.exp),segment.size=0.01,hjust=0.2, size=3, col=colorDiff,max.overlaps=20)+
+  theme_classic()+
+  #geom_text( label = label_name, nudge_x = 0.1, nudge_y = 0.1,  check_overlap = T)+
+  theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+dev.off()
+
+#
+nrow(dat.log.exp)
+FinalUsedProteinDatasetFinalscaled<-scale(t(dat.log.exp))
+#Km<-kmeans(df, centers = 5, nstart=25)
+pca_res <- prcomp(FinalUsedProteinDatasetFinalscaled, center = TRUE, scale. = TRUE)
+pca_scores <- as.data.frame(pca_res$x)
+pca_scores$Sample <- rownames(pca_scores)
+rownames(pca_scores)
+library(ggplot2)
+pdf("PCAanalyses_Intensity.pdf", width = 8, height = 7)
+ggplot(pca_scores, aes(x = PC1, y = PC2, label = Sample, color =colorDiff)) +
+  geom_point(size = 1, color = "black") +
+  geom_text_repel(vjust = -0.5, size = 3) +
+  theme_bw() +
+  labs(
+    title = "PCA: PC1 vs PC2",
+    x = paste0("PC1 (", round(summary(pca_res)$importance[2, 1] * 100, 1), "% variance)"),
+    y = paste0("PC2 (", round(summary(pca_res)$importance[2, 2] * 100, 1), "% variance)")
+  )
+### other methods: 
+dev.off()
+
+dat.log.exp
+dat.log.exp = na.omit(dat.log.exp)
+# we used the median centered
+pdf("NormalizedPermutation_MaxLFQ_Intensityboxplot.pdf", height = 6, width = 8)
+#ggplot(dat.log.exp.long)
+
+boxplot(dat.log.exp, las=2) 
+dev.off()
+library(tidyr)
+dat.log.exp.df <- dat.log.exp %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "Protein") %>%
+  pivot_longer(
+    cols = -Protein,          # all columns except Protein
+    names_to = "Sample",
+    values_to = "Log2Intensity"
+  )
+
+pdf("NormalizedPermutation_MaxLFQ_Intensityboxplot_2.pdf", height = 6, width = 10)
+#gg
+ggplot(dat.log.exp.df, aes(x = Sample, y = Log2Intensity, fill = Sample)) +
+  geom_boxplot(outlier.shape = NA) +  # remove outlier dots
+
+  coord_cartesian(ylim = c(10, 25)) +
+  theme_minimal() +
+  labs(title = "Protein Expression by Condition",
+       y = "Log2 Intensity",
+       x = "Condition") +theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+dev.off()
+
+pdf("DensityPlotForEachSamplewithLog2Imputation.pdf", height = 6, width = 10)
+ggplot(dat.log.exp.df, aes(x = Log2Intensity, color = Sample, fill = Sample)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal() 
+  #labs(title = "Density Plots for Each Sample with Log2 and imputation", x = "Value", y = "Density")
+dev.off()
 ```
 
 # Differentially expressed proteins detection using various pipelines, including DEqMS, Limma, Wilxcon, DEP, proDA, ROTS.

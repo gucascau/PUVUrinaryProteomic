@@ -1,0 +1,854 @@
+---
+title: "Correlation Analyses "
+author: "Xin Wang"
+date: "2025-05-07"
+output: html_document
+Description:
+       1. Generate a histogram with different colors for the correlation to GFR, age, race, clinical traits
+           2. Generate the correlation points with several genes. (for all the candidate genes)
+           3. Draw the biomarker correlation with other factor bubble grid plot
+           4. Generate the biomarker correlations among themselves
+           5. Generate the biomarker correlation with other factor bubble grid plot
+---
+
+# load the libraries
+```{r}
+#rm(list = ls())
+library(ggplot2)
+library(dplyr)
+library(tibble)
+
+library(edgeR)
+library(clusterProfiler)
+library(org.Mm.eg.db)
+#keytypes(org.Mm.eg.db) 
+
+library(enrichplot)
+library(tidyverse)
+library(factoextra)
+library(RColorBrewer)
+require(viridis)
+library(viridis)
+library(MASS) 
+library(reshape2) 
+#library(reshape) 
+#install.packages("ggbreak")
+library(ggbreak)
+sessionInfo()
+#BiocManager::install("org.Hs.eg.db",force = TRUE)
+
+library(org.Hs.eg.db)
+```
+
+# read and create the folders for the comparisions
+```{r}
+# set up the working directory
+Outdir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Correlation/")
+setwd(Outdir)
+
+# the DEPs were stored in the different folders 
+Indir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/")
+setwd(Outdir)
+
+# the folder to store the clinical characteristics and the raw files
+ClinicInputDir<- c("/Users/XXW004/Documents/Projects/DarylMcleod/Data Analysis/")
+
+```
+
+# read the input datasets --- Revision
+```{r}
+# read the clinical datasets
+CaseClinicalCharacters<- read.csv(paste0(ClinicInputDir, "PUV_Urine_Proteomics_Cohort_Final.csv" ))
+
+ControlClinicalCharacters<- read.csv(paste0(ClinicInputDir, "ControlClinic2.csv" ), header = T, row.names = 1)
+CaseClinicalCharacters
+ControlClinicalCharacters
+# read the comparison between case and controls
+DEPsCasevsControls<- read.csv(paste0(Indir, "Intensity_Analyses_CasesVsControls/MethodIntegration/FinalCombinedPvalue_IntegratedMethods.csv"))
+
+# We will use the normalized and permutated expression datasets.
+
+ExpressionColumns<-grep("Wilcoxon_Case|Wilcoxon_Control",colnames(DEPsCasevsControls), value = TRUE)
+
+CaseColumns<-grep("Wilcoxon_Case",colnames(DEPsCasevsControls), value = TRUE)
+ExpressedProteins<- DEPsCasevsControls[,ExpressionColumns]
+rownames(ExpressedProteins) <- DEPsCasevsControls$ID
+colnames(ExpressedProteins)<-gsub("Wilcoxon_","",colnames(ExpressedProteins))
+# case expression 
+CaseExpressedProteins<- DEPsCasevsControls[,CaseColumns]
+#CaseExpressedProteins<- na.omit(CaseExpressedProteins)
+rownames(CaseExpressedProteins) <- DEPsCasevsControls$ID
+colnames(CaseExpressedProteins)<-gsub("Wilcoxon_","",colnames(CaseExpressedProteins))
+#CaseExpressedProteins[,1:20] %>% head()
+CaseExpressedProteins <- na.omit(CaseExpressedProteins)
+CaseExpressedProteins_Nolog <- 2^CaseExpressedProteins
+
+ClinicalFactors2<-as.matrix(t(CaseClinicalCharacters))
+colnames(ClinicalFactors2) <- ClinicalFactors2["ID",]
+ClinicalFactors2
+
+# combine the clinical factors and CaseExpressedProteins_Nolog
+
+CaseExpressionClinical <-rbind(ClinicalFactors2, CaseExpressedProteins_Nolog)
+
+# add the group
+CaseExpressionClinical <- as.data.frame(t(CaseExpressionClinical))
+
+# write into the table
+write.csv(CaseExpressionClinical, file = "CaseExpressionClinical.csv")
+
+
+```
+
+# measure the correlation scores of each characteritics in the cases
+```{r}
+## create the clinic factor, please pay attention to the order 
+age<-as.numeric(ClinicalFactors2["Age",])
+Height<-as.numeric(ClinicalFactors2["Height",])
+Weight<-as.numeric(ClinicalFactors2["Weight",])
+GFR<-as.numeric(ClinicalFactors2["GFR",])
+Creatinin<-as.numeric(ClinicalFactors2["SNC1",])
+LEStatus <- as.numeric(ClinicalFactors2["LE.status",])
+rUTI <- as.numeric(ClinicalFactors2["rUTI",])
+DilatingVUR <- as.numeric(ClinicalFactors2["DilatingVUR",])
+ProphylacticAbx <- as.numeric(ClinicalFactors2["ProphylacticAbx",])
+PopOff<- as.numeric(ClinicalFactors2["Pop.Off",])
+TimingPUVDx <- as.numeric(ClinicalFactors2["TimingPUVDx",])
+RedoAblation<- as.numeric(ClinicalFactors2["RedoAblation",])
+CIC<- as.numeric(ClinicalFactors2["CIC",])
+Diversion<- as.numeric(ClinicalFactors2["Diversion",])
+Reimplantation<- as.numeric(ClinicalFactors2["Reimplantation",])
+Augmentation<- as.numeric(ClinicalFactors2["Augmentation",])
+Nephrectomy<- as.numeric(ClinicalFactors2["Nephrectomy",])
+
+Pyeloplasty<- as.numeric(ClinicalFactors2["Pyeloplasty",])
+Nephrostomy<- as.numeric(ClinicalFactors2["Nephrostomy",])
+Ureterostomy<- as.numeric(ClinicalFactors2["Ureterostomy",])
+Vesicostomy<- as.numeric(ClinicalFactors2["Vesicostomy",])
+
+#CystC<-as.numeric(Proteomiclist[[2]]["CystC",])
+CaseExpressedProteins_Nolog$spearmanAgePvalue<- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], age, method='spearman')$p.value)
+CaseExpressedProteins_Nolog$spearmanAgeRho <- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], age, method='spearman')$estimate) 
+
+CaseExpressedProteins_Nolog$spearmanWeightPvalue <- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], Weight, method='spearman')$p.value) 
+
+CaseExpressedProteins_Nolog$spearmanWeightRho <- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], Weight, method='spearman')$estimate) 
+
+
+CaseExpressedProteins_Nolog$spearmanGFRPvalue <- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], GFR, method='spearman')$p.value) 
+
+CaseExpressedProteins_Nolog$spearmanGFRRho <- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], GFR, method='spearman')$estimate) 
+
+CaseExpressedProteins_Nolog$spearmanCreatininPvalue <- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], Creatinin, method='spearman')$p.value) 
+
+CaseExpressedProteins_Nolog$spearmanCreatininRho <- apply(CaseExpressedProteins_Nolog, 1, function(x) cor.test(x[1:20], Creatinin, method='spearman')$estimate) 
+
+view(CaseExpressedProteins_Nolog)
+CaseExpressedProteins_Nolog %>% head()
+### print the table our 
+write.csv(CaseExpressedProteins_Nolog, file="FilteredProteomic_pvalue_wilcoxon_withSpearman.csv")
+
+```
+
+
+## --- Revision
+```{r}
+
+
+
+colnames(CaseExpressionClinical)[1:27]
+
+# Clinical variables to correlate
+clinical_vars <- c("GFR","Age","Race","LE.status","DilatingVUR","Pop.Off","CKD","TimingPUVDx")
+
+
+clinical <- CaseExpressionClinical[,1:27]
+proteins <- CaseExpressionClinical[,28:ncol(CaseExpressionClinical)]
+
+colnames(proteins)
+colnames(clinical)
+# Initialize list to store results
+results_list <- vector("list", length = ncol(proteins))
+names(results_list) <- colnames(proteins)
+
+# Loop through each protein
+for(p in colnames(proteins)) {
+  
+  #p= "CLU"
+  # Ensure p is a single character string
+  p <- as.character(p)
+
+  # Build dataframe for regression
+  df <- data.frame(
+    GFR = as.numeric(CaseExpressionClinical$GFR),
+    Age = as.numeric(CaseExpressionClinical$Age),
+    Race = as.numeric(CaseExpressionClinical$Race),
+    Pop.Off = as.numeric(CaseExpressionClinical$Pop.Off),
+    DilatingVUR = as.numeric(CaseExpressionClinical$DilatingVUR),
+    LE.status = as.numeric(CaseExpressionClinical$LE.status),
+    TimingPUVDx = as.numeric(CaseExpressionClinical$TimingPUVDx),
+    CKD = as.numeric(CaseExpressionClinical$CKD),
+    protein = as.numeric(CaseExpressionClinical[[p]])  # safe access
+  )
+
+  # Fit linear model
+  fit <- lm(GFR ~ protein + Age + Race + Pop.Off + DilatingVUR + LE.status +TimingPUVDx, data = df)
+
+  # Extract coefficient table
+  coef_table <- summary(fit)$coefficients
+  # Prepare row for all variables
+  row <- data.frame(
+    Protein = p,
+    Beta_Protein = coef_table["protein", "Estimate"],
+    Pvalue_Protein = coef_table["protein", "Pr(>|t|)"],
+    Beta_Age = coef_table["Age", "Estimate"],
+    Pvalue_Age = coef_table["Age", "Pr(>|t|)"],
+    Beta_Race = coef_table["Race", "Estimate"],
+    Pvalue_Race = coef_table["Race", "Pr(>|t|)"],
+    Beta_PopOff = coef_table["Pop.Off", "Estimate"],
+    Pvalue_PopOff = coef_table["Pop.Off", "Pr(>|t|)"],
+    Beta_DilatingVUR = coef_table["DilatingVUR", "Estimate"],
+    Pvalue_DilatingVUR = coef_table["DilatingVUR", "Pr(>|t|)"],
+    Beta_LEstatus = coef_table["LE.status", "Estimate"],
+    Pvalue_LEstatus = coef_table["LE.status", "Pr(>|t|)"],
+    Beta_TimingPUVDx = coef_table["TimingPUVDx", "Estimate"],
+    Pvalue_TimingPUVDx = coef_table["TimingPUVDx", "Pr(>|t|)"]
+  )
+  
+  
+  # Calculate Spearman correlation for protein vs each clinical variable
+  spearman_list <- lapply(clinical_vars, function(var){
+    x <- df$protein
+    y <- df[[var]]
+    
+    # Handle NA
+    valid <- complete.cases(x, y)
+    cor_test <- cor.test(x[valid], y[valid], method="spearman")
+    
+    c(Rho = cor_test$estimate, Pvalue = cor_test$p.value)
+  })
+  
+  spearman_df <- as.data.frame(t(unlist(spearman_list)))
+  colnames(spearman_df) <- paste0(rep(clinical_vars, each=2), "_Spearman", rep(c("_Rho","_Pvalue"), times=length(clinical_vars)))
+  
+  
+  # Combine linear model + Spearman
+  row_full <- cbind(row, spearman_df)
+  
+  results_list[[p]] <- row_full
+}
+
+# Combine all results into one tidy dataframe
+# results <- do.call(rbind, results_list)
+
+# Combine all results
+results <- bind_rows(results_list)
+
+# Adjust protein p-values for multiple testing (FDR)
+results <- results %>%
+  mutate(FDR_Protein = p.adjust(Pvalue_Protein, method = "BH"))
+
+
+library(ggplot2)
+
+# Plot protein Beta values with nominal p < 0.05
+ggplot(results, aes(x=reorder(Protein, Beta_Protein), y=Beta_Protein)) +
+  geom_point(aes(color=Pvalue_Protein < 0.05)) +
+  coord_flip() +
+  labs(x="Protein", y="Effect size (Beta)", color="Nominal p < 0.05") +
+  theme_minimal()
+
+# effect size and P value
+# define the top assocaited proteins
+# Define top associated proteins: either by p < 0.05 OR top |Beta|
+# Define proteins to highlight: nominal p < 0.05 AND Spearman ρ > 0.6
+highlight_proteins <- results %>%
+  filter(GFR_Spearman_Pvalue < 0.05 & (GFR_Spearman_Rho >= 0.6 | GFR_Spearman_Rho <=  -0.6))
+nrow(highlight_proteins) %>% head()
+highlight_proteins 
+top_proteins <- highlight_proteins %>%
+  filter(Pvalue_Protein < 0.05) %>%          # nominally significant
+  arrange(desc(abs(Beta_Protein))) %>%
+  dplyr::slice(1:20)  
+
+
+# set up the color
+# Choose cutoff by quantile (top 25% positive/negative)
+pos_cutoff <- quantile(results$Beta_Protein[results$Beta_Protein > 0], 0.75)
+neg_cutoff <- quantile(results$Beta_Protein[results$Beta_Protein < 0], 0.25)
+
+results <- results %>%
+  mutate(Effect_Color = case_when(
+    Pvalue_Protein < 0.05 & Beta_Protein >= pos_cutoff ~ "Strong positive",
+    Pvalue_Protein < 0.05 & Beta_Protein <= neg_cutoff ~ "Strong negative",
+    TRUE ~ "Not significant"
+  ))
+
+
+# We select all the significant genes
+
+FinalSignificantProteinsList<- results %>%
+  filter((Effect_Color == "Strong positive" |Effect_Color == "Strong negative" ) & GFR_Spearman_Pvalue < 0.05 & (GFR_Spearman_Rho >= 0.6 | GFR_Spearman_Rho <=  -0.6))        # nominally significant
+
+length(FinalSignificantProteinsList)
+results %>%
+  filter((Effect_Color == "Strong positive" |Effect_Color == "Strong negative" )) %>% nrow()
+results %>%
+  filter((Effect_Color == "Strong positive" )) %>% nrow()
+
+results %>%
+  filter((Effect_Color == "Strong negative" )) %>% nrow()
+# Volcano plot
+library(ggrepel)
+FinalAssociatedVolcanoPlot <-
+ggplot(results, aes(x=Beta_Protein, y=-log10(Pvalue_Protein))) +
+  geom_point(aes(color=Effect_Color), alpha=0.6, size=2) +  # color by correlation
+  scale_color_manual(values = c("Strong positive" = "red",
+                                "Strong negative" = "blue",
+                                "Not significant" = "grey")) +
+  geom_hline(yintercept=-log10(0.05), linetype="dashed", color="gray") + # p=0.05
+  geom_vline(xintercept=0, linetype="dashed") +
+  # Label top associated proteins
+  geom_text_repel(data = top_proteins,
+                  aes(label=Protein),
+                  size=3,
+                  box.padding = 0.5,
+                  max.overlaps = Inf) +
+  labs(
+    x = "Effect size (Beta from regression)",
+    y = "-log10(P value)",
+    #title = "Volcano Plot of Proteins vs eGFR"
+  ) +
+  theme_classic()
+
+ggsave("FinalAssociatedVolcanoPlot.pdf", plot = FinalAssociatedVolcanoPlot, height = 4, width = 6)
+
+
+# Then I generate the association scatter plots
+
+
+setwd("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Correlation/GFRCorrelation_multivariableLinearRegression/")
+
+for (genename in FinalSignificantProteinsList$Protein) {
+  #<- colnames(IntergratedBiomarker)[i]
+  #genename <- c("C5")
+  # select the group and gene expression
+  # use select to choose the column
+  #BiomarkerExpTranfer%>% dplyr::select(c(genename,"Group"))
+  #genename <- "CA1"
+  GeneExp <- as.data.frame(CaseExpressionClinical[, c(genename, "GFR")])
+  GeneExp
+  # add the value column to represent the genename
+  #attach(Mutationload_genes)
+  GeneExp$value <- as.numeric(GeneExp[, c(genename)])
+  GeneExp$GFR <- as.numeric(GeneExp[, "GFR"])
+  #dodge <- position_dodge(width = 0.3)
+  pdf(
+    file = paste(genename, ".GFRcorrelation.pdf", sep = ""),
+    width = 3.5,
+    height = 3
+  )
+  #pdf(file = "test.pdf",width = 4,height = 4)
+  P <-  ggplot(GeneExp, aes(x = value, y = GFR)) + geom_point()  +
+    geom_smooth(method = 'lm', col = "black") + theme_bw() +
+    theme(
+      panel.border = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.line = element_line(colour = "black")
+    )
+  print(P)
+  dev.off()
+  
+}
+
+# write them into the table 
+write.csv(results, file = "Clinical_Features_ToGFR.csv")
+
+# View results
+head(results)
+
+# restrict our analyses that FDR <0.05
+
+significant_proteins <- results %>% 
+  dplyr::filter(!is.na(Pvalue_Protein) & Pvalue_Protein < 0.05)
+
+
+# we select the proteins that not assocaited with age, race, pop-off, dilating VUR
+significant_proteins_NoassocaitionOtherClinical <- results %>% 
+  dplyr::filter(!is.na(Pvalue_Protein) & Pvalue_Protein < 0.05 & (Age_Spearman_Rho >= -0.6 & Age_Spearman_Rho <= 0.6) &  (Race_Spearman_Rho >= -0.6 & Race_Spearman_Rho <= 0.6)&  (DilatingVUR_Spearman_Rho >= -0.6 & DilatingVUR_Spearman_Rho <= 0.6) &  (Pop.Off_Spearman_Rho >= -0.6 & Pop.Off_Spearman_Rho <= 0.6) &  (Pop.Off_Spearman_Rho >= -0.6 & Pop.Off_Spearman_Rho <= 0.6) & (LE.status_Spearman_Rho >= -0.6 & LE.status_Spearman_Rho <= 0.6 ))
+
+nrow(significant_proteins_NoassocaitionOtherClinical)
+
+```
+
+# generate the dotplot for these FinalSignificantProteinsList --- Revision
+```{r}
+
+FinalSignificantProteinsList %>% head()
+# Create dotplot
+# Add -log10 Pvalue column
+FinalSignificantProteinsList <- FinalSignificantProteinsList %>%
+  mutate(logP = -log10(Pvalue_Protein))
+
+# Dotplot
+DotPlotFinalSignifcantProteins<-ggplot(FinalSignificantProteinsList, aes(x = Beta_Protein, y = reorder(Protein, Beta_Protein))) +
+  geom_point(aes(size = logP, color = GFR_Spearman_Rho)) +
+  scale_color_gradient(low = "blue", high = "red") +
+  scale_size_continuous(range = c(3,8)) +
+  labs(
+    x = "Beta (Effect size from regression)",
+    y = "Protein",
+    color = "Spearman Rho with eGFR",
+    size = "-log10(P value)"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.y = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 10)
+  )
+
+ggsave("DotPlotFinalSignifcantProteins.pdf", plot = DotPlotFinalSignifcantProteins, height = 6, width = 6)
+
+```
+
+# summary of the table --- Revision
+```{r}
+# Load necessary packages
+library(dplyr)
+#install.packages("summarytools")
+library(summarytools)
+
+# Read in your data
+# Replace "your_table.csv" with your actual data file
+data <- CaseClinicalCharacters
+
+colnames(data)
+
+# Convert categorical variables to factors
+
+# Summary for categorical variables
+categorical_vars <- colnames(data)[2:27]
+
+cat_summary <- lapply(data[categorical_vars], function(x) {
+  tbl <- table(x)
+  pct <- prop.table(tbl) * 100
+  data.frame(Count = as.numeric(tbl), Percent = round(pct,1), row.names = names(tbl))
+})
+
+# Print categorical summaries
+cat_summary
+
+# Summary for continuous variables
+continuous_vars <- c("Age", "Height", "Weight","GFR","SNC1")
+
+cont_summary <- data %>%
+  dplyr::select(all_of(continuous_vars)) %>%
+  summarise(across(everything(), list(
+    Mean = ~mean(., na.rm = TRUE),
+    SD = ~sd(., na.rm = TRUE),
+    Median = ~median(., na.rm = TRUE),
+    Min = ~min(., na.rm = TRUE),
+    Max = ~max(., na.rm = TRUE)
+  )))
+
+# Print continuous summaries
+cont_summary
+
+# Optional: Create a combined summary table
+# This uses summarytools for a nice table
+dfSummary(data, plain.ascii = FALSE, style = "grid")
+
+```
+
+
+
+
+
+
+
+```{r}
+# sort the GFR Rho and add the ranking and correlation
+CaseExpressedProteins_Nolog<-CaseExpressedProteins_Nolog %>% arrange(spearmanGFRRho) %>% mutate(
+  Rank = c(1:length(
+    CaseExpressedProteins_Nolog$spearmanGFRRho
+  )),
+  Correlation =
+    case_when(
+      spearmanGFRRho >= 0.7 ~ 'Stronger positive',
+      spearmanGFRRho <= -0.7 ~ 'Stronger negative',
+      .default = 'Moderate or weak'
+    )
+)
+
+#### different categories of proteins with correlation
+table(CaseExpressedProteins_Nolog$Correlation)
+length(row.names(CaseExpressedProteins_Nolog %>% filter(Correlation== "Stronger positive")))
+
+length(row.names(CaseExpressedProteins_Nolog %>% filter(Correlation== "Stronger negative")))
+
+length(row.names(CaseExpressedProteins_Nolog %>% filter(Correlation== "Moderate or weak")))
+
+
+CaseExpressedProteins_Nolog %>% tail()
+
+
+```
+
+# generate couple of figures, a histogram with different colors
+
+```{r}
+# Get the eGFR highly correlated proteins
+HighCorrelatedProteins <-
+  CaseExpressedProteins_Nolog %>% rownames_to_column(var = "protein") %>% filter(spearmanGFRRho >= 0.6 | spearmanGFRRho <= -0.6)
+HighCorrelatedProteins %>% head()
+# Generate the density distribution 
+pdf("SpearmanDistribution_break.pdf", width = 9, height = 3) 
+#bw <- 2 * IQR(SpearmanSorted$spearmanGFRRho) / length(SpearmanSorted$spearmanGFRRho)^(1/3)
+ggplot(CaseExpressedProteins_Nolog, aes(spearmanGFRRho, fill=Correlation)) +geom_histogram(bins=400)+
+  scale_fill_manual(values=c( "#D3D3D3", "#3498DB","#F1948A"))+theme_bw() + 
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))+ 
+  scale_x_continuous(limits=c(-1,1)) +ylim(0,30)
+
+dev.off()
+
+
+# generate the scatter plots for these high correlated proteins
+
+
+for (genename in HighCorrelatedProteins$protein) {
+  #<- colnames(IntergratedBiomarker)[i]
+  
+  # select the group and gene expression
+  # use select to choose the column
+  #BiomarkerExpTranfer%>% dplyr::select(c(genename,"Group"))
+  #genename <- "CA1"
+  GeneExp <- as.data.frame(CaseExpressionClinical[, c(genename, "GFR")])
+  GeneExp
+  # add the value column to represent the genename
+  #attach(Mutationload_genes)
+  GeneExp$value <- as.numeric(GeneExp[, c(genename)])
+  GeneExp$GFR <- as.numeric(GeneExp[, "GFR"])
+  #dodge <- position_dodge(width = 0.3)
+  pdf(
+    file = paste(genename, ".GFRcorrelation.pdf", sep = ""),
+    width = 3.5,
+    height = 3
+  )
+  #pdf(file = "test.pdf",width = 4,height = 4)
+  P <-  ggplot(GeneExp, aes(x = value, y = GFR)) + geom_point()  +
+    geom_smooth(method = 'lm', col = "black") + theme_bw() +
+    theme(
+      panel.border = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.line = element_line(colour = "black")
+    )
+  print(P)
+  dev.off()
+  
+}
+```
+
+# generate the dotplot for the log 10 vpalue, coefficient for these top 
+```{r}
+# 
+HighCorrelatedProteins
+
+```
+
+# we checked the different biomarkers as the renal injury in the PUV
+```{r}
+
+BiomarkerDir <- c("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/OverlappingComparisons/")
+results
+# for the early biomarkers
+# 
+EarlyBiomarkers <- read.csv(paste0(BiomarkerDir, "FinalEarlySpecificMarkers_ordered.csv"))
+
+EarlyBiomarkersAssocaition<- results %>% filter(Protein %in% EarlyBiomarkers$X)
+# for the conserved biomarkers
+# 
+ConservedBiomarkers <- read.csv(paste0(BiomarkerDir, "FinalDEGconservedMarkers_Ordered.csv"))
+ConservedBiomarkersAssocaition<- results %>% filter(Protein %in% ConservedBiomarkers$x)
+ConservedBiomarkersAssocaition %>% head()
+
+# for the late biomarkers
+
+LateBiomarkers <- read.csv(paste0(BiomarkerDir, "FinalAvancedSpecificMarkers.csv"))
+LateBiomarkersAssocaition<- results %>% filter(Protein %in% LateBiomarkers$x.1)
+LateBiomarkersAssocaition %>% head()
+
+LateBiomarkersAssocaition %>% filter(Pvalue_Protein <=0.05 ) %>% nrow()
+
+```
+
+
+# Still working on this!
+```{r}
+################################################################################################
+### generate the biomarker expression difference, scatter plot to show the difference
+################################################################################################
+
+dim(BiomarkerExp)
+
+## then add the group information 
+BiomarkerExpTranfer<-as.data.frame(t(BiomarkerExp))
+BiomarkerExp_GFRfreedisTranfer <- as.data.frame(t(BiomarkerExp_GFRfreedis))
+dim(BiomarkerExpTranfer)
+dim(BiomarkerExp_GFRfreedisTranfer)
+BiomarkerExp_GFRfreedisTranfer
+########## add a group column for the all the genes
+GFRLowSample<-c("X7","NURAG51","NURAG62","X58","NURAG49","NURAG73","X37","NURAG86","NURAG63","X40")
+GFRHighSample<-c("NURAG88","NURAG64","X2","X41","NURAG91","NURAG89","NURAG48","NURAG94","NURAG90","UO118")
+CaseSample<-c("X30","NURAG45","X35","NURAG78","C170","C3","NURAG77","NURAG75","C8","X57","X17","AAPU.19","C150","C179","X20","C178","C157","X32","NURAG76","NURAG44")
+
+
+#match(GFRLowSample,row.names(BiomarkerExpTranfer))
+row.names(BiomarkerExpTranfer) %in% GFRLowSample
+row.names(BiomarkerExpTranfer) %in% GFRHighSample 
+
+#BiomarkerExpTranfer$id<-row.names(BiomarkerExpTranfer)
+
+## please remember 
+BiomarkerExpTranfer<- BiomarkerExpTranfer %>% mutate( Group= case_when(row.names(BiomarkerExpTranfer) %in% GFRLowSample~"LowGFR",
+                                             row.names(BiomarkerExpTranfer) %in% GFRHighSample ~ "highGFR",
+                                          TRUE ~ "Control"))
+
+## setup the group for the non-sensentive
+BiomarkerExp_GFRfreedisTranfer<-BiomarkerExp_GFRfreedisTranfer %>% mutate(Group= case_when(row.names(BiomarkerExp_GFRfreedisTranfer) %in% GFRLowSample~"LowGRF",
+                                                                                           row.names(BiomarkerExp_GFRfreedisTranfer)%in% GFRHighSample ~"highGFR",
+                                                                                           TRUE ~ "Control"))
+
+## For the groups that can distinguish GFR high and low but not correlated to GFR
+
+GeneNumber_GFRfree<-length(colnames(BiomarkerExp_GFRfreedisTranfer))-1
+
+### For the GFR noncorrrelated 
+for (i in 1:GeneNumber_GFRfree){
+  genenameGFRfree<- colnames(BiomarkerExp_GFRfreedisTranfer)[i]
+  
+  # select the group and gene expression
+  # use select to choose the column 
+  #BiomarkerExpTranfer%>% dplyr::select(c(genename,"Group"))
+  
+  GeneExpGFRfree<-BiomarkerExp_GFRfreedisTranfer[,c(genenameGFRfree,"Group")]
+  # add the value column to represent the genename
+  #attach(Mutationload_genes)
+  GeneExpGFRfree$value<-BiomarkerExp_GFRfreedisTranfer[,c(genenameGFRfree)]
+  
+  dodge <- position_dodge(width = 0.3)
+  pdf(file=paste(genenameGFRfree,".ExpComp.pdf", sep=""), width = 3, height =4)
+  #pdf(file = "test.pdf",width = 4,height = 4)
+  P<-ggplot(GeneExpGFRfree, aes(x=GeneExpGFRfree$Group, y = value, fill=Group ))+ 
+    geom_violin(position = dodge)+ 
+    # geom_boxplot(width=0.1, fill="white",coef=1e30)+ 
+    geom_boxplot(width=0.1, coef=1e30)+
+    geom_jitter(shape=16, position=position_jitter(0.2),col="black",size=1)+
+    theme_classic() + scale_fill_manual(values=c("#00AFBB", "#E7B800", "#FC4E07")) +theme(legend.position="none")
+  #  
+  #  #geom_boxplot(outlier.shape=NA, fill=c("red","blue"),alpha = 0.8,width=0.8)+ 
+  # # theme_bw()+ scale_fill_manual(values=c("#FF0000", "#0000FF"))+
+  # # theme(plot.background = element_blank(),
+  #  #      panel.grid.major = element_blank(),
+  #        panel.grid.minor = element_blank(),
+  #        panel.background = element_blank())
+  #ggplot muse use print or we can use ggsave
+  print(P)
+  
+  dev.off()
+  
+}
+
+#############################################################
+## then Generate the correlation points example for all biomarkers
+#############################################################
+BiomarkerGFRExp_GFRfreedis<-AllProteinExpression[row.names(AllProteinExpression) %in% Biomarkers_GFRfreedis,c(1:20)]
+
+BiomarkerGFRExpTrans_GFRfreedis<-as.data.frame(t(BiomarkerGFRExp_GFRfreedis))
+BiomarkerGFRExpTrans_GFRfreedis
+IntergratedBiomarker_GFRfreedis<-merge(BiomarkerGFRExpTrans_GFRfreedis, ClinicalFactors, by= "row.names")
+IntergratedBiomarker_GFRfreedis
+length(BiomarkerGFRExp_GFRfreedis)
+
+for (i in 2:(length(BiomarkerGFRExp_GFRfreedis)+1)){
+  genename<- colnames(IntergratedBiomarker_GFRfreedis)[i]
+ 
+  # select the group and gene expression
+  # use select to choose the column 
+  #BiomarkerExpTranfer%>% dplyr::select(c(genename,"Group"))
+  
+  GeneExp<-IntergratedBiomarker_GFRfreedis[,c(genename,"GFR")]
+  # add the value column to represent the genename
+  #attach(Mutationload_genes)
+  GeneExp$value<-IntergratedBiomarker_GFRfreedis[,c(genename)]
+  
+  #dodge <- position_dodge(width = 0.3)
+  pdf(file=paste(genename,".GFRcorrelation.pdf", sep=""), width = 3.5, height = 3)
+  #pdf(file = "test.pdf",width = 4,height = 4)
+  P<-  ggplot(GeneExp, aes(x=value,y=GFR)) +geom_point()  + 
+    geom_smooth(method='lm', col="black") +theme_bw() + 
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+  
+  
+  print(P)
+  
+  dev.off()
+  
+}
+
+
+################
+
+
+
+
+## generate multiple plot 
+## measure how many genes
+GeneNumber<-length(colnames(BiomarkerExpTranfer))-1
+
+### For the GFR noncorrrelated 
+for (i in 1:GeneNumber){
+  genename<- colnames(BiomarkerExpTranfer)[i]
+
+  # select the group and gene expression
+  # use select to choose the column 
+  #BiomarkerExpTranfer%>% dplyr::select(c(genename,"Group"))
+  
+  GeneExp<-BiomarkerExpTranfer[,c(genename,"Group")]
+  # add the value column to represent the genename
+  #attach(Mutationload_genes)
+  GeneExp$value<-BiomarkerExpTranfer[,c(genename)]
+  
+  dodge <- position_dodge(width = 0.3)
+  pdf(file=paste(genename,".ExpComp.pdf", sep=""), width = 3, height =4)
+  #pdf(file = "test.pdf",width = 4,height = 4)
+  P<-ggplot(GeneExp, aes(x=GeneExp$Group, y = value, fill=Group ))+ 
+    geom_violin(position = dodge)+ 
+    # geom_boxplot(width=0.1, fill="white",coef=1e30)+ 
+    geom_boxplot(width=0.1, coef=1e30)+
+    geom_jitter(shape=16, position=position_jitter(0.2),col="black",size=1)+
+    theme_classic() + scale_fill_manual(values=c("#00AFBB", "#E7B800", "#FC4E07")) +theme(legend.position="none")
+   #  
+   #  #geom_boxplot(outlier.shape=NA, fill=c("red","blue"),alpha = 0.8,width=0.8)+ 
+   # # theme_bw()+ scale_fill_manual(values=c("#FF0000", "#0000FF"))+
+   # # theme(plot.background = element_blank(),
+   #  #      panel.grid.major = element_blank(),
+   #        panel.grid.minor = element_blank(),
+   #        panel.background = element_blank())
+  #ggplot muse use print or we can use ggsave
+   print(P)
+  
+  dev.off()
+  
+}
+
+
+#############################################################
+## then Generate the correlation points example for all biomarkers
+#############################################################
+BiomarkerGFRExp<-AllProteinExpression[row.names(AllProteinExpression) %in% Biomarkers,c(1:20)]
+
+BiomarkerGFRExpTrans<-as.data.frame(t(BiomarkerGFRExp))
+BiomarkerGFRExpTrans
+IntergratedBiomarker<-merge(BiomarkerGFRExpTrans, ClinicalFactors, by= "row.names")
+IntergratedBiomarker
+
+
+for (i in 2:22){
+  genename<- colnames(IntergratedBiomarker)[i]
+  
+  # select the group and gene expression
+  # use select to choose the column 
+  #BiomarkerExpTranfer%>% dplyr::select(c(genename,"Group"))
+  
+  GeneExp<-IntergratedBiomarker[,c(genename,"GFR")]
+  # add the value column to represent the genename
+  #attach(Mutationload_genes)
+  GeneExp$value<-IntergratedBiomarker[,c(genename)]
+  
+  #dodge <- position_dodge(width = 0.3)
+  pdf(file=paste(genename,".GFRcorrelation.pdf", sep=""), width = 3.5, height = 3)
+  #pdf(file = "test.pdf",width = 4,height = 4)
+  P<-  ggplot(GeneExp, aes(x=value,y=GFR)) +geom_point()  + 
+    geom_smooth(method='lm', col="black") +theme_bw() + 
+    theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+ 
+  
+  print(P)
+  
+  dev.off()
+  
+}
+
+
+
+
+
+
+
+
+
+#################################################################
+################################################################
+
+
+
+## give the index
+match(GFRhighSample,colnames(BiomarkerExp))
+
+## low GFR, high GFR, and controls -- three ways to detect the biomarkers
+BiomarkerExpLowGFR<-BiomarkerExp[,match(GFRLowSample,colnames(BiomarkerExp))]
+head(BiomarkerExpLowGFR)
+BiomarkerExpHighGFR<- BiomarkerExp %>% dplyr::select(GFRHighSample)
+
+head(BiomarkerExpHighGFR)
+BiomarkerExControl<-BiomarkerExp[,c(21:40)]
+
+#rownames(BiomarkerExControl)
+length(rownames(BiomarkerExControl))
+
+
+
+
+
+
+
+
+
+
+BiomarkerExpCor<-as.data.frame(BiomarkerExpCor)
+#### Then combine with clinical factors
+BiomarkerExpCor$id<-row.names(BiomarkerExpCor)
+
+
+BioMarkerCombined<-merge(BiomarkerExpCor,BiomarkerSpearmanSortedDataFrame, by="id")
+
+
+## then transfer the Data frame into the 
+
+BioMarkerCombinedReshape<-melt(BioMarkerCombined, id="id")
+
+BioMarkerCombinedReshape$variable
+
+
+dev.off()
+pdf("BioMarkerAllCorrelation.pdf", width = 15, height =7)
+
+ggplot(BioMarkerCombinedReshape, aes(x=variable, y=id)) +
+  geom_point(aes(size= abs(value),colour=value))+
+  geom_text(aes(label = (sprintf(BioMarkerCombinedReshape$value, fmt = '%#.2f'))),size=1.2, colour="black")+
+  scale_colour_gradient2(low = "LightBlue", midpoint=0, mid="white", high = "FireBrick", na.value = NA,limits=c(-1,1),breaks=seq(-1,1, by=0.5)) +
+  theme_classic()
+
+#(BiomarkerExpCor, method="circle",type="lower") 
+
+dev.off()
+
+
+```

@@ -1,5 +1,5 @@
 ---
-title: "FigureGeneration_ForMS_NormalvsControl"
+title: "FigureGeneration_ForMS"
 author: "Xin Wang"
 date: "2025-04-10"
 output: html_document
@@ -35,10 +35,10 @@ library(purrr)
 ```{r}
 
 # Input directory
-InputDir <- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_NormalGFRVsControls/MethodIntegration/")
+InputDir <- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_CasesVsControls/MethodIntegration/")
 
 # Output directory
-OutDir<- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_NormalGFRVsControls/MethodIntegration/Figures/")
+OutDir<- paste0("/Users/XXW004/Documents/Projects/DarylMcleod/Results/Results_03242025/Intensity_Analyses_CasesVsControls/MethodIntegration/Figures/")
 
 setwd(OutDir)
 
@@ -47,6 +47,21 @@ setwd(OutDir)
 # read the input datasets
 ```{r}
 FinalIntegratedMethods <-read.csv(paste0(InputDir,"FinalCombinedPvalue_IntegratedMethods.csv"))
+# original spectral counts
+
+SpectralCountsMatrix <- read.csv("/Users/XXW004/Documents/Projects/DarylMcleod/RawData/Final_Used/combined_final_protein_ByJF.csv")
+
+SpectralColumNames <- c(paste0("Case",1:20,".Spectral.Count"), paste0("Control",1:20,".Spectral.Count"))
+SpectralCaseHighNames <- c(paste0("Case",1:10,".Spectral.Count"))
+SpectralCaseLowNames<- c(paste0("Case",11:20,".Spectral.Count"))
+SpectralControlNames<- c(paste0("Control",1:20,".Spectral.Count"))
+# select the protein spectral counts matrix
+FinalSpectralCountMatrix<- SpectralCountsMatrix[, c("Gene",SpectralColumNames)]
+FinalSpectralCountMatrix %>% head()
+# calculate the final spectral average counts
+FinalSpectralCountMatrix$MeanHighCases <- apply (FinalSpectralCountMatrix[,SpectralCaseHighNames],1, function(x) mean(x))
+FinalSpectralCountMatrix$MeanLowCases <- apply (FinalSpectralCountMatrix[,SpectralCaseLowNames],1, function(x) mean(x))
+FinalSpectralCountMatrix$MeanControls <- apply (FinalSpectralCountMatrix[,SpectralControlNames],1, function(x) mean(x))
 
 ```
 
@@ -82,10 +97,10 @@ FinalIntegratedMethodsVolcano<-ggplot(FinalIntegratedMethods,aes(x=max_logFC,y=-
         text = element_text(size=16),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        panel.background = element_blank()) + ylim(c(0,30))
+        panel.background = element_blank()) + ylim(c(0,50))
 
-ggsave("FinalIntegratedMethods_volcanoPlots_higheGFRhigheGFRPUVvsControl.pdf", plot =FinalIntegratedMethodsVolcano, height = 4, width = 4 )
-FinalIntegratedMethodsVolcano
+ggsave("FinalIntegratedMethods_volcanoPlots_PUVvsControl.pdf", plot =FinalIntegratedMethodsVolcano, height = 4, width = 4 )
+
 ```
 
 # generate the supplementary tables for up-regulated proteins and down-regulated proteins from different methods
@@ -93,22 +108,43 @@ FinalIntegratedMethodsVolcano
 UpRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC >=0.585) %>% arrange(FinaladjP_Fisher)
 DownRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.585) %>% arrange(FinaladjP_Fisher)
 
-colnames(FinalIntegratedMethods)
 # generate the selected columns
-SelectedColumnForPublication<- c("ID","max_logFC","FinalP_Fisher", "FinaladjP_Fisher","Limma_logFC",	"Limma_P.Value.x",	"Limma_adj.P.Val", "DEqMS_logFC", "DEqMS_sca.P.Value.x",	"DEqMS_sca.adj.pval",	"proDA_diff",	"proDA_pval.x",	"proDA_adj_pval", "ROTS_logFC",	"ROTS_P.Value.x",	"ROTS_adj.pval", "Wilcoxon_logFC",	"Wilcoxon_P.Value.x",	"Wilcoxon_adj.pval","DEP_Case_vs_Controls_ratio", "DEP_Case_vs_Controls_p.val.x",	"DEP_Case_vs_Controls_p.adj",	 "MSstats_log2FC", "MSstats_pvalue.x",	"MSstats_adj.pvalue", "Mascot_GFRLogFC", "Mascot_GFRwilpvalue", "Mascot_GFRPadjust",  "max_logFC", "FinalP_empirical",	"FinalP_Fisher",	"FinalP_Tippett",	"FinalP_Stouffer",	"FinaladjP_Fisher",	"FinaladjP_Tippett",	"FinaladjP_Stouffer",	"FinaladjP_empirical")
+SelectedColumnForPublication<- c("ID","max_logFC","FinalP_Fisher","FinaladjP_Fisher","Limma_logFC",	"Limma_P.Value.x",	"Limma_adj.P.Val", "DEqMS_logFC","DEqMS_sca.P.Value.x",	"DEqMS_sca.adj.pval",	"proDA_diff","proDA_pval.x",	"proDA_adj_pval", "ROTS_logFC",	"ROTS_P.Value.x",	"ROTS_adj.pval", "Wilcoxon_logFC",	"Wilcoxon_P.Value.x",	"Wilcoxon_adj.pval", "DEP_Case_vs_Controls_ratio","DEP_Case_vs_Controls_p.val.x",	"DEP_Case_vs_Controls_p.adj",	 "MSstats_log2FC", "MSstats_pvalue.x",	"MSstats_adj.pvalue","Mascot_LogFC", "Mascot_wilpvalue.x", "Mascot_Padjust",  "max_logFC", "FinalP_empirical",	"FinalP_Fisher",	"FinalP_Tippett",	"FinalP_Stouffer",	"FinaladjP_Fisher",	"FinaladjP_Tippett",	"FinaladjP_Stouffer",	"FinaladjP_empirical")
 
-# c("ID","max_logFC","FinalP_Fisher","FinaladjP_Fisher","Limma_logFC",	"Limma_P.Value.x",	"Limma_adj.P.Val",  "DEqMS_logFC","DEqMS_sca.P.Value.x",	"DEqMS_sca.adj.pval",	"proDA_diff", "proDA_pval.x",	"proDA_adj_pval",	 "ROTS_logFC",	"ROTS_P.Value.x",	"ROTS_adj.pval", "Wilcoxon_logFC",	"Wilcoxon_P.Value.x",	"Wilcoxon_adj.pval", "DEP_LCase_vs_HCase_ratio","DEP_LCase_vs_HCase_p.val.x",	"DEP_LCase_vs_HCase_p.adj",	 "MSstats_log2FC", "MSstats_pvalue.x",	"MSstats_adj.pvalue", "Mascot_GFRLogFC","Mascot_GFRwilpvalue", "Mascot_GFRPadjust",  "max_logFC", "FinalP_empirical",	"FinalP_Fisher",	"FinalP_Tippett",	"FinalP_Stouffer",	"FinaladjP_Fisher",	"FinaladjP_Tippett",	"FinaladjP_Stouffer",	"FinaladjP_empirical")
 UpRegulatedProteinsFinal<- UpRegulatedProteins %>%  dplyr::select(all_of(SelectedColumnForPublication))
 
 DownRegulatedProteinsFinal<- DownRegulatedProteins %>%  dplyr::select(all_of(SelectedColumnForPublication))
 
-write.csv(UpRegulatedProteinsFinal, "UpRegulatedProteins_higheGFRPUVvsControl.csv")
+write.csv(UpRegulatedProteinsFinal, "UpRegulatedProteins_PUVvsControl.csv")
 
 
-write.csv(DownRegulatedProteinsFinal, "DownRegulatedProteins_higheGFRPUVvsControl.csv")
+write.csv(DownRegulatedProteinsFinal, "DownRegulatedProteins_PUVvsControl.csv")
+
+# we added the spectral counts
+UpRegulatedProteinsFinalComprehensive <- UpRegulatedProteinsFinal %>% inner_join(FinalSpectralCountMatrix, by = c("ID"="Gene"))
+write.csv(UpRegulatedProteinsFinalComprehensive, file = "UpRegulatedProteinsFinalComprehensive.csv")
+# we added the spectral counts for downregulated proteins
+DownRegulatedProteinsFinalComprehensive <- DownRegulatedProteinsFinal %>% inner_join(FinalSpectralCountMatrix, by = c("ID"="Gene"))
+write.csv(DownRegulatedProteinsFinalComprehensive, file = "DownRegulatedProteinsFinalComprehensive.csv")
 
 
 ```
+
+# check how many p values were support these Up and down-regulated proteins
+```{r}
+UpRegulatedProteinsFinalEvaluation <- UpRegulatedProteinsFinal %>% mutate()
+
+# selected the P values from various methods
+SelectedPvalueColumns <- c("Limma_P.Value.x", "DEqMS_sca.P.Value.x", "proDA_pval.x", "ROTS_P.Value.x","Wilcoxon_P.Value.x", "DEP_Case_vs_Controls_p.val.x", "MSstats_pvalue.x", "Mascot_wilpvalue.x")
+
+
+UpRegulatedProteinsFinal$p_lt_0.05_count <- apply(UpRegulatedProteinsFinal[,SelectedPvalueColumns], 1, function(x) sum(x < 0.05, na.rm = TRUE))
+table(UpRegulatedProteinsFinal$p_lt_0.05_count )
+
+DownRegulatedProteinsFinal$p_lt_0.05_count <- apply(DownRegulatedProteinsFinal[,SelectedPvalueColumns], 1, function(x) sum(x < 0.05, na.rm = TRUE))
+table(DownRegulatedProteinsFinal$p_lt_0.05_count )
+```
+
 
 # generate the dotplots for the top up-regualted and down-regulated proteins
 ```{r}
@@ -116,16 +152,15 @@ UpRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 
 DownRegulatedProteins<-FinalIntegratedMethods %>%  filter(FinaladjP_Fisher <=0.05 & max_logFC <=-0.585) %>% arrange(FinaladjP_Fisher)
 
 nrow(UpRegulatedProteins)
-#UpRegulatedProteins$ID
 nrow(DownRegulatedProteins)
 # selected the top 10 differentially expressed proteins
 TOP5URP<-FinalIntegratedMethods %>%  filter(FinalP_Fisher <=0.05 & max_logFC >=0.585) %>% arrange(FinalP_Fisher) %>% slice_head(n = 5) %>% pull(ID)
-TOP5URP
+
 TOP5DRP<-FinalIntegratedMethods %>%  filter(FinalP_Fisher <=0.05 & max_logFC <=-0.585) %>% arrange(FinalP_Fisher) %>% slice_head(n = 5)%>% pull(ID)
-TOP5DRP
+
 colnames(FinalIntegratedMethods)
 # select the logFC and P values
-PvalueRownames <- c("ID","Limma_P.Value.x", "DEqMS_sca.P.Value.x","proDA_pval.x", "ROTS_P.Value.x", "Wilcoxon_P.Value.x","MSstats_pvalue.x","DEP_Case_vs_Controls_p.val.x","Mascot_GFRwilpvalue")
+PvalueRownames <- c("ID","Limma_P.Value.x", "DEqMS_sca.P.Value.x","proDA_pval.x", "ROTS_P.Value.x", "Wilcoxon_P.Value.x","MSstats_pvalue.x","DEP_Case_vs_Controls_p.val.x","Mascot_wilpvalue.x")
 
 #PvalueRownames <- c("Limma_P.Value", "DEqMS_sca.P.Value","proDA_pval", "ROTS_P.Value", "Wilcoxon_P.Value","DEP_Case_vs_Controls_p.val","MSstats_pvalue","Mascot_wilpvalue")
 
@@ -148,7 +183,7 @@ DEPFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","DEP_Case_vs_Con
 
 MSstatsFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","MSstats_pvalue.x","MSstats_log2FC")  %>% mutate(Type ="MSstats") %>%   dplyr::rename(Pvalue = MSstats_pvalue.x, LogFC = MSstats_log2FC)
 
-MascotFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","Mascot_GFRwilpvalue","Mascot_GFRLogFC")  %>% mutate(Type ="Mascot") %>%   dplyr::rename(Pvalue = Mascot_GFRwilpvalue, LogFC = Mascot_GFRLogFC)
+MascotFinalResults<- FinalIntegratedMethods %>% dplyr::select("ID","Mascot_wilpvalue.x","Mascot_LogFC")  %>% mutate(Type ="Mascot") %>%   dplyr::rename(Pvalue = Mascot_wilpvalue.x, LogFC = Mascot_LogFC)
 
 MascotFinalResults
 # we combine all these results
@@ -192,7 +227,7 @@ RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)
   theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
 RequestedGenesHeatmap
 
-ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct_higheGFRPUVvsControl.pdf"),plot =RequestedGenesHeatmap, height = 3, width =5 )
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =5 )
 RequestedGenesHeatmap
 
 RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
@@ -203,20 +238,20 @@ RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
   labs(title = PathwayName, size = "-log10(p value)", color = "LogFC")
 RequestedGenesDotPlot
-ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD_higheGFRPUVvsControl.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
+ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
 
 
 RequestedGenesDotPlot
-FinalExpDEGs$Gene
-FinalExpDEGs$Gene <- factor(FinalExpDEGs$Gene, levels = c("Atp6v1g3","Atp6v1c2", "Atp6v1b1", "Atp6v0d2","Atp6v0a4"))  
+#FinalExpDEGs$Gene
+# FinalExpDEGs$Gene <- factor(FinalExpDEGs$Gene, levels = c("Atp6v1g3","Atp6v1c2", "Atp6v1b1", "Atp6v0d2","Atp6v0a4"))  
 
-ggplot(FinalExpDEGs, aes(x = log2FoldChange, y = Gene, fill = Group)) +
-  geom_bar(stat = "identity", position = "dodge",color = "black") +  # "dodge" separates bars for each category
-  labs(x = "Log2Fold Change",
-       y = "Genes") +
-  theme_classic() + 
-  scale_fill_grey(start = 0.3, end = 0.9) +  # Apply gray color scale
-  theme(legend.position = "top") 
+# ggplot(FinalExpDEGs, aes(x = log2FoldChange, y = Gene, fill = Group)) +
+#   geom_bar(stat = "identity", position = "dodge",color = "black") +  # "dodge" separates bars for each category
+#   labs(x = "Log2Fold Change",
+#        y = "Genes") +
+#   theme_classic() + 
+#   scale_fill_grey(start = 0.3, end = 0.9) +  # Apply gray color scale
+#   theme(legend.position = "top") 
 
 ```
 
@@ -247,12 +282,12 @@ CgoUpSimplify <- clusterProfiler::simplify(CgoUp)
 CgoDownSimplify <- clusterProfiler::simplify(CgoDown)
 
 enrichMap(CgoUp)
-write.table(CgoUpSimplify, file="higheGFRPUVvsControl.UpRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
-write.table(CgoDownSimplify, file="higheGFRPUVvsControl.DownRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
+write.table(CgoUpSimplify, file="PUVvsControl.UpRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
+write.table(CgoDownSimplify, file="PUVvsControl.DownRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
 CgoDownSimplify@result %>% head(n=10)
 CgoUpSimplify@result %>% head(n=20)
-write.table(CgoUp, file="higheGFRPUVvsControl.UpRegulatedGenes.GO.txt", sep="\t", quote=F)
-write.table(CgoDown, file="higheGFRPUVvsControl.DownRegulatedGenes.GO.txt", sep="\t", quote=F)
+write.table(CgoUp, file="PUVvsControl.UpRegulatedGenes.GO.txt", sep="\t", quote=F)
+write.table(CgoDown, file="PUVvsControl.DownRegulatedGenes.GO.txt", sep="\t", quote=F)
 
 
 ```
@@ -273,7 +308,7 @@ tail(geneList)
 # draw the categories of up-regulated proteins and their FC across methods, their interesting pathways
 ```{r}
 
-GOcategories <- c("keratinocyte differentiation","humoral immune response")
+GOcategories <- c("keratinization","humoral immune response","chronic inflammatory response")
 p1 <- cnetplot(CgoUpSimplify, foldChange=geneList, showCategory = GOcategories)+ scale_color_gradient2(name='URP', low='darkblue', high='firebrick')
 
 ggsave("Up_regulated_Keratin_Immune.pdf",plot =p1, height = 4, width = 4.5 )
@@ -343,7 +378,7 @@ ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGe
 ```{r}
 #geneList
 geneList
-GOcategories <- c("wound healing","regeneration","coagulation")
+GOcategories <- c("wound healing","epithelial tube morphogenesis","renal system development")
 p2 <- cnetplot(CgoDownSimplify, foldChange=geneList, showCategory = GOcategories)+ scale_color_gradient2(name='UDP', low='darkblue', high='firebrick')
 
 ggsave("Down_regulated_RenalDev_Wound.pdf",plot =p2, height = 4, width = 4.5 )
@@ -354,12 +389,8 @@ heatplot(CgoDownSimplify, foldChange=geneList, showCategory=GOcategories)
 
 # filter the genes list
 RequestedGenes<-CgoDownSimplify %>% as_tibble()%>% filter(Description %in% GOcategories) %>% pull(geneID) %>% strsplit("/") %>% unlist() %>% unique() %>% sort()
-
-# we updated the candiate genes: 
-
-
-RequestedGenes <- c("KRT5","KRT14", "KRT1","KRT17", "KRT6A", "KRT16", "KRT80", "KRT10","KRT2","UPK2","UPK1A","B2M","S100P","COL6A1","COL4A1","COL4A2")
-PathwayName <- "Candidate final pathways"
+RequestedGenes
+PathwayName <- "Candidate Down pathways"
 FinalExpDEGs<-FinalMethodCombinedDEPs %>%  filter( ID %in% RequestedGenes)
 
 FinalMethodCombinedDEPs %>% filter(ID ==c("LCN2"))
@@ -394,7 +425,7 @@ RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)
   theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
 RequestedGenesHeatmap
 
-ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =7 )
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =6 )
 RequestedGenesHeatmap
 
 RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +

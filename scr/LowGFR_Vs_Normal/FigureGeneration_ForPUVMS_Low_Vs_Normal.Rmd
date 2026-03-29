@@ -84,7 +84,7 @@ FinalIntegratedMethodsVolcano<-ggplot(FinalIntegratedMethods,aes(x=max_logFC,y=-
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) + ylim(c(0,30)) +xlim(c(-4,4))
 
-ggsave("FinalIntegratedMethods_volcanoPlots_LowGFRPUVvsControl.pdf", plot =FinalIntegratedMethodsVolcano, height = 4, width = 4 )
+ggsave("FinalIntegratedMethods_volcanoPlots_LowGFRPUVvsNormal.pdf", plot =FinalIntegratedMethodsVolcano, height = 4, width = 4 )
 FinalIntegratedMethodsVolcano
 ```
 
@@ -103,10 +103,10 @@ UpRegulatedProteinsFinal<- UpRegulatedProteins %>%  dplyr::select(all_of(Selecte
 
 DownRegulatedProteinsFinal<- DownRegulatedProteins %>%  dplyr::select(all_of(SelectedColumnForPublication))
 
-write.csv(UpRegulatedProteinsFinal, "UpRegulatedProteins_LowGFRPUVvsControl.csv")
+write.csv(UpRegulatedProteinsFinal, "UpRegulatedProteins_LowGFRPUVvsNormal.csv")
 
 
-write.csv(DownRegulatedProteinsFinal, "DownRegulatedProteins_LowGFRPUVvsControl.csv")
+write.csv(DownRegulatedProteinsFinal, "DownRegulatedProteins_LowGFRPUVvsNormal.csv")
 
 
 ```
@@ -192,7 +192,7 @@ RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)
   theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
 RequestedGenesHeatmap
 
-ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct_LowGFRPUVvsControl.pdf"),plot =RequestedGenesHeatmap, height = 3, width =5 )
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct_LowGFRPUVvsNormal.pdf"),plot =RequestedGenesHeatmap, height = 3, width =5 )
 RequestedGenesHeatmap
 
 RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
@@ -203,7 +203,7 @@ RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels
   labs(title = PathwayName, size = "-log10(p value)", color = "LogFC")
 RequestedGenesDotPlot
-ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD_LowGFRPUVvsControl.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
+ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD_LowGFRPUVvsNormal.pdf"),plot =RequestedGenesDotPlot, height = 9, width = 4 )
 
 ```
 
@@ -234,12 +234,12 @@ CgoUpSimplify <- clusterProfiler::simplify(CgoUp)
 CgoDownSimplify <- clusterProfiler::simplify(CgoDown)
 
 enrichMap(CgoUp)
-write.table(CgoUpSimplify, file="LowGFRPUVvsControl.UpRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
-write.table(CgoDownSimplify, file="LowGFRPUVvsControl.DownRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
+write.table(CgoUpSimplify, file="LowGFRPUVvsNormal.UpRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
+write.table(CgoDownSimplify, file="LowGFRPUVvsNormal.DownRegulatedGenes_simplified.GO.txt", sep="\t", quote=F)
 CgoDownSimplify@result %>% head(n=10)
 CgoUpSimplify@result %>% head(n=20)
-write.table(CgoUp, file="LowGFRPUVvsControl.UpRegulatedGenes.GO.txt", sep="\t", quote=F)
-write.table(CgoDown, file="LowGFRPUVvsControl.DownRegulatedGenes.GO.txt", sep="\t", quote=F)
+write.table(CgoUp, file="LowGFRPUVvsNormal.UpRegulatedGenes.GO.txt", sep="\t", quote=F)
+write.table(CgoDown, file="LowGFRPUVvsNormal.DownRegulatedGenes.GO.txt", sep="\t", quote=F)
 
 
 ```
@@ -260,10 +260,10 @@ tail(geneList)
 # draw the categories of up-regulated proteins and their FC across methods, their interesting pathways
 ```{r}
 
-GOcategories <- c("keratinocyte differentiation","epidermis development","chronic inflammatory response")
+GOcategories <- c("complement activation","fibrinolysis","coagulation")
 p1 <- cnetplot(CgoUpSimplify, foldChange=geneList, showCategory = GOcategories)+ scale_color_gradient2(name='URP', low='darkblue', high='firebrick')
 
-ggsave("Up_regulated_Keratin_Immune.pdf",plot =p1, height = 4, width = 4.5 )
+ggsave("Up_regulated_Keratin_Immune.pdf",plot =p1, height = 4, width = 6 )
 ?cnetplot
 heatplot(CgoUpSimplify, foldChange=geneList, showCategory=GOcategories)
 
@@ -330,10 +330,10 @@ ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGe
 ```{r}
 #geneList
 geneList
-GOcategories <- c("wound healing","epithelial tube morphogenesis","renal system development")
+GOcategories <- c("wound healing","kidney development","keratinocyte differentiation")
 p2 <- cnetplot(CgoDownSimplify, foldChange=geneList, showCategory = GOcategories)+ scale_color_gradient2(name='UDP', low='darkblue', high='firebrick')
 
-ggsave("Down_regulated_RenalDev_Wound.pdf",plot =p2, height = 4, width = 4.5 )
+ggsave("Down_regulated_RenalDev_Wound.pdf",plot =p2, height = 5, width = 6 )
 ?cnetplot
 heatplot(CgoDownSimplify, foldChange=geneList, showCategory=GOcategories)
 
@@ -342,7 +342,11 @@ heatplot(CgoDownSimplify, foldChange=geneList, showCategory=GOcategories)
 # filter the genes list
 RequestedGenes<-CgoDownSimplify %>% as_tibble()%>% filter(Description %in% GOcategories) %>% pull(geneID) %>% strsplit("/") %>% unlist() %>% unique() %>% sort()
 RequestedGenes
-PathwayName <- "Candidate Down pathways"
+
+# For requested Genes
+RequestedGenes<- c("C2","C3","C4B","A2M","IGHG3","SERPINA1","SERPINC1","FGB","FGG","FGA", "CD9", "PLAU", "AXL", "SDC4","KNG1","KRT2","KRT5","KRT14","KRT6B","KRT10","KRT16","LRP2","AQP2","UMOD","GPC3")
+
+PathwayName <- "Candidate all pathways"
 FinalExpDEGs<-FinalMethodCombinedDEPs %>%  filter( ID %in% RequestedGenes)
 
 FinalMethodCombinedDEPs %>% filter(ID ==c("LCN2"))
@@ -377,7 +381,7 @@ RequestedGenesHeatmap<-ggplot(FinalExpDEGs, aes(x = Group, y = ID, fill = LogFC)
   theme(legend.key.size = unit(0.4, "cm"), legend.title = element_text(size = 8)) +coord_flip()
 RequestedGenesHeatmap
 
-ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =6 )
+ggsave(paste0(PathwayName, "_FC_HeatMap_inCollecDuct.pdf"),plot =RequestedGenesHeatmap, height = 3, width =8 )
 RequestedGenesHeatmap
 
 RequestedGenesDotPlot<-ggplot(FinalExpDEGs, aes(x = Group, y = ID)) +
