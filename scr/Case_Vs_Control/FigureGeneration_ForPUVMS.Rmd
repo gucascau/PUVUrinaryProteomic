@@ -405,61 +405,61 @@ ggsave(paste0(PathwayName, "_FC_DotPlot_inCollecDuct_DKD.pdf"),plot =RequestedGe
 ```
 
 
-# generate the violin and jigger point for CLU and APOA4
-```{r}
-# we have 
-FinalExpressionMatrix %>% head()
+<!-- # generate the violin and jigger point for CLU and APOA4 -->
+<!-- ```{r} -->
+<!-- # we have  -->
+<!-- FinalExpressionMatrix %>% head() -->
 
 
 
-df_long <- FinalExpressionMatrix [1:41] %>%
-  pivot_longer(
-    cols = -ID,
-    names_to = "Sample",
-    values_to = "Value"
-  )
+<!-- df_long <- FinalExpressionMatrix [1:41] %>% -->
+<!--   pivot_longer( -->
+<!--     cols = -ID, -->
+<!--     names_to = "Sample", -->
+<!--     values_to = "Value" -->
+<!--   ) -->
 
-df_long<-df_long %>% mutate(Group = ifelse(grepl("Case", Sample), "Case", "Control"))
+<!-- df_long<-df_long %>% mutate(Group = ifelse(grepl("Case", Sample), "Case", "Control")) -->
 
-markers <- c("CLU", "APOA4")  # 你可以换成你要的
-df_plot <- df_long %>% filter(ID %in% markers)
-library(ggpubr)
+<!-- markers <- c("CLU", "APOA4")  # 你可以换成你要的 -->
+<!-- df_plot <- df_long %>% filter(ID %in% markers) -->
+<!-- library(ggpubr) -->
 
-TwoBioMarkerExpBoxPlot<-ggplot(df_plot, aes(x = Group, y = Value, fill = Group)) +
-  
-  # # violin
-  # geom_violin(trim = FALSE, scale = "width", alpha = 0.4, color = NA) +
-  # 
-  # # boxplot
-  # geom_boxplot(width = 0.15, outlier.shape = NA, alpha = 0.6) +
-  # 
-  # # jitter points
-  # geom_jitter(width = 0.12, size = 2, alpha = 0.8) +
-  # scale_fill_manual(values = c("gray70", "white")) +
-  # 
-  geom_violin(trim = FALSE, color = "black", alpha = 0.8,width = 0.6) +
-  geom_jitter(color = "black", width = 0.1, alpha = 0.7, size = 1) +
-  geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.3, color = "black") +
-  scale_fill_manual(values = c("gray70", "white")) +
-  # facet by marker
-  facet_wrap(~ID, scales = "free_y") +
-  
-  # statistics（如果有两组）
-  #stat_compare_means(method = "wilcox.test", label = "p.format") +
-  
-  theme_classic() +
-  labs(
-    x = "",
-    y = "Proteomic Expression",
-    #title = "Selected biomarkers from heatmap"
-  ) +
-  
-  theme(
-    strip.text = element_text(size = 12, face = "bold"),
-    axis.text = element_text(size = 10),
-    legend.position = "none"
-  )
+<!-- TwoBioMarkerExpBoxPlot<-ggplot(df_plot, aes(x = Group, y = Value, fill = Group)) + -->
 
-ggsave("APOA4_CLU_Expression_Proteomics.pdf", plot =TwoBioMarkerExpBoxPlot, height = 3, width = 6 )
-```
+<!--   # # violin -->
+<!--   # geom_violin(trim = FALSE, scale = "width", alpha = 0.4, color = NA) + -->
+<!--   #  -->
+<!--   # # boxplot -->
+<!--   # geom_boxplot(width = 0.15, outlier.shape = NA, alpha = 0.6) + -->
+<!--   #  -->
+<!--   # # jitter points -->
+<!--   # geom_jitter(width = 0.12, size = 2, alpha = 0.8) + -->
+<!--   # scale_fill_manual(values = c("gray70", "white")) + -->
+<!--   #  -->
+<!--   geom_violin(trim = FALSE, color = "black", alpha = 0.8,width = 0.6) + -->
+<!--   geom_jitter(color = "black", width = 0.1, alpha = 0.7, size = 1) + -->
+<!--   geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.3, color = "black") + -->
+<!--   scale_fill_manual(values = c("gray70", "white")) + -->
+<!--   # facet by marker -->
+<!--   facet_wrap(~ID, scales = "free_y") + -->
+
+<!--   # statistics（如果有两组） -->
+<!--   stat_compare_means(method = "wilcox.test", label = "p.format") + -->
+
+<!--   theme_classic() + -->
+<!--   labs( -->
+<!--     x = "", -->
+<!--     y = "Proteomic Expression", -->
+<!--     #title = "Selected biomarkers from heatmap" -->
+<!--   ) + -->
+
+<!--   theme( -->
+<!--     strip.text = element_text(size = 12, face = "bold"), -->
+<!--     axis.text = element_text(size = 10), -->
+<!--     legend.position = "none" -->
+<!--   ) -->
+
+<!-- ggsave("APOA4_CLU_Expression_Proteomics.pdf", plot =TwoBioMarkerExpBoxPlot, height = 3, width = 6 ) -->
+<!-- ``` -->
 
