@@ -1,2 +1,0 @@
-install.packages("shiny.info", repos="http://cran.us.r-project.org")
-install.packages("/path/to/shiny.info_0.2.0.9000.tar.gz", repos = NULL, type = "source")
