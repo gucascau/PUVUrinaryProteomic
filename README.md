@@ -5,7 +5,7 @@ Posterior urethral valves (PUV) represent the most common cause of congenital bl
 <img src="figs/PUV.jpg" width="1500"/>
 
 # Patient recruitment
-After obtaining Institutional Review Board (IRB) approval (IRB18-00695) and informed consent/assent, urine samples were collected from 20 boys with clinically proven PUV (cases) and 20 age- and sex-matched controls. Cases were recruited from our multispecialty clinic. Most boys were able to provide a voided sample (17/20), while two required a bag and one was collected at cystoscopy. Two of the patients were managed with incontinent diversions at the time of urine collection (one vesicostomy and one cutaneous ureterostomy). No patient was on clean intermittent catheterization at the time of sample collection. Healthy controls were recruited from the general pediatric clinic at the time of a well child check or non-urologic complaint. Any child with a history of a known urologic condition was excluded. Control urine was collected by volitional voiding or urine bag only. 
+After obtaining Institutional Review Board (IRB) approval (IRB18-00695) and informed consent/assent, urine samples were collected from 20 boys with clinically proven PUV (cases) and 20 age- and sex-matched controls. Cases were recruited from our multispecialty clinic. Most boys were able to provide a voided sample (17/20), while two required a bag and one was collected at cystoscopy. Two of the patients were managed with incontinent diversions at the time of urine collection (one vesicostomy and one cutaneous ureterostomy). Healthy controls were recruited from the general pediatric clinic at the time of a well child check or non-urologic complaint. Any child with a history of a known urologic condition was excluded. Control urine was collected by volitional voiding or urine bag only. 
 
 # Description
 Proteomic profiling was performed using urine samples collected from 40 boys, encompassing 20 cases with PUV and 20 unaffected, age-matched controls. Among cases, the median ± interquartile range for eGFR was 89 ± 41 ml/min/1.73 m2. Urine samples were subjected to liquid chromatography with tandem mass spectrometry (LC-MS/MS).
@@ -18,6 +18,7 @@ To detect the differentially expressed urinary proteins, , we implemented a comp
     3. Detection of differentially expressed proteins between low eGFR versus cases with normal eGFR
     4. Detection of differentially expressed proteins between low eGFR versus cases with controls
     5. Pathway and functional enrichment of each categories
+    6. Correlation analyses between clinal features and urinary proteomics
 
 <img src="figs/ProteomicIntegration.png" width="1500"/>   
 
